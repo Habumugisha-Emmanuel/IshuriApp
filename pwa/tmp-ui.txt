@@ -1,0 +1,333 @@
+A message reaching a parent phone
+A school desk sending marks and discipline to a parent phone
+A school is online while one of its staff has IshuriApp open. The count clears about 90 seconds after they leave.
+A teacher recording marks
+Abnormal
+About
+Academic performance report
+Across this period
+Actions
+Activate
+Add a subject
+Add a title
+Add event
+Add subject
+Add the subjects
+Address
+Airtime purchase, airtime bundle
+All classes
+All messages
+Already in the school
+Amount
+Analysis
+Annual
+Approve and publish
+Approve for public website
+Approved schools appear here after IshuriApp review.
+Assessment
+Assessment report
+At risk
+Average
+Back
+Bank transfer, term 1
+By category
+Calendar of school events
+Call
+Call +250 795645441
+Cancel
+Cancel edit
+Cancel reply
+Categories
+Category
+Choose a class
+Choose a class or a student
+Choose a conversation
+Choose a filter
+Choose a student
+Choose an end date on or after the start date.
+Choose the report
+Choose the school, the amount paid, the date, and how many messages that payment allows. When those messages are used, the school is asked to top up.
+Class
+Class name
+Class position
+Class register
+Class.
+Close
+Comment
+Compare schools
+Copied
+Copy
+Cost
+Create director account
+Create the class first. The class teacher is chosen here, not on the class form.
+Cumulative earnings trend
+Date
+Deactivate
+Deducted
+Delete
+Delete “${ad.title}”?
+Delete ${item.title}? The saved marks will be removed too.
+Delete ${school.name}? This cannot be undone.
+Delete school
+Delivered messages × 5 RWF, added up through the period.
+Department
+Discipline
+Discipline officer
+Discipline report
+District
+Each bar is that school’s messages in this period, split by category. The colours match the chart above.
+Each card repeats the same definitions. Period figures and today’s register are kept apart.
+Each row is the total for that day, week, month, or year.
+Edit
+Edited
+Editing your message
+Email
+Email.
+Events
+Every number is sent as 250 followed by 9 digits, for example 250788000000. A number typed as 0795645441 is sent as 250795645441.
+Exam results
+Facebook
+Facilities
+Filter
+Founded
+Gallery
+Gateway and operating costs
+Grade
+History
+Home
+How a figure is counted
+How each school sent
+In short
+In this filter
+In-app ads
+Incident
+Incidents
+Incoming messages
+Incoming messages will show up here.
+Initialize term marks
+Inside this period
+IshuriApp
+IshuriApp · Rwanda’s school atlas
+IshuriApp finance
+Join the IshuriApp WhatsApp group
+Landscape
+Late to assembly
+Left after
+Library, Laboratory, Pitch
+LinkedIn
+Loading...
+Location
+Location listed on profile
+Log out
+Login.
+Manage
+Marks
+MARKS
+Marks, term results, discipline, and school notices sent in this period.
+Mathematics
+Maximum
+Medium
+Meetings, sports, debates, visiting days, graduations and scholarships.
+Message analytics
+Message line
+Message sent
+Message unsent
+Message Wallet
+Message…
+messages
+Messages
+Messages by category
+Messages by period
+Messages graph
+Messages left
+Messages line
+Messages over the selected period
+Messages over time
+Messaging earnings
+Mission
+Month
+My class
+Name and signature
+National rankings
+Needs a top up
+Net profit uses these recorded costs. SMS credit purchases already in the ledger are included as gateway cost.
+New school director
+Next event
+No assessments in this period.
+No days in this view.
+No discipline cases in this period.
+No discipline cases were recorded in this academic year.
+No events posted
+No marks were recorded for this term.
+No messages in this filter.
+No one matches that search.
+No opportunities right now
+No payments recorded yet.
+No photos yet
+No public events
+No public staff yet
+No ranked schools in this category
+No records match this class, term and academic year.
+No schools match this filter.
+No schools match this filter. Clear the search or choose All statuses.
+No schools yet
+No share to chart in this filter.
+No staff messages in this filter.
+No student with that name
+No student with that name in this class.
+No students in your classes yet.
+No subjects added yet.
+No subjects on this class
+No written comment on this record.
+No.
+Normal
+Not completed
+Not copied
+Not saved
+Not sent
+Not sent · Retry
+Not unsent
+Notify parents
+Now
+Open map
+Operating
+over
+Overview
+Paid
+Paid and unpaid
+Paid gauge
+Parent
+Parent phone
+Parent telephone
+Parents follow marks and discipline by phone message
+Parents meeting Saturday 09:00.
+Password required
+Passwords do not match
+Payments
+Performance
+Performance snapshots published by each approved school, with national rank.
+Period
+Phone / WhatsApp
+Phone / WhatsApp.
+Place
+Portrait
+Previous
+Print / Save PDF
+Print PDF
+Print register
+Programs
+Publish event
+Qualifications
+Qualifications.
+Record cost
+Record each school payment under Message wallets. A school sends until that allowance is used, then it is asked to top up.
+Register today
+Registered students
+Reject
+Remaining
+Remove
+Remove ${member.fullName}? They will no longer be able to sign in.
+Remove ${room.name}? It will leave the class list. Students already registered stay on their records.
+Remove ${student.fullName} from this class list?
+Reply
+Report preview
+Report ready
+Revenue distribution
+Role title
+Role title.
+Running total
+Rwanda’s school atlas
+S6 PCM
+Save messages left
+Save sheet
+Save the sheet first. Notify parents after it is saved.
+Say hello. Tap a message to reply, react, copy, edit, or delete.
+School
+School events
+School figures
+School figures compared
+School logo
+School name
+School remarks
+School team sign in
+School website
+Schools
+Schools and staff
+Schools online now
+Schools send the messages
+Sciences, TVET, Languages
+Score
+Search a school, district or motto
+Search people
+Select a class
+Select a class, or type a student name.
+Select a school
+Send a heart
+Send a message
+Send message
+Share of delivered-message revenue by school.
+Share of messages
+Sheet
+Sign in
+Signals carry marks and a discipline notice from the teachers
+SMS
+SMS gateway
+Staff
+Staff in each school
+Start a chat
+Starting points
+Status
+Student
+Student Academic Performance Report
+Student code
+Student Discipline Report
+Students
+Students and parent phones
+Students and parents browse freely. Staff sign in for the desk.
+Students and parents browse freely. This login is for directors, teachers and IshuriApp staff.
+Subject
+Subjects
+Subjects in this class
+Subjects on this class
+Subjects.
+Subtract and notify parent
+Successful messages
+Super admin
+Super admin selling messages to schools
+Tap a message to reply, react, copy, edit, or delete. A heart sends when the box is empty. Seen appears when the other person opens the chat.
+Teacher
+Teacher comments
+Teachers
+Teaching
+Teaching.
+Term 1
+Term 2
+Term 3
+The desk is locked.
+The line follows the same day, week, month, or year totals as the list below.
+The quiet atlas of Rwanda’s classrooms.
+The same ads as Discover. The image is shown first, then the video.
+This account has no workspace tools.
+total
+Total marks
+Total messages
+Totals and charts use only the schools that pass every filter.
+Type
+Type a student name
+Universities publish events and scholarships. Class marks stay with primary, secondary and TVET schools.
+Unpaid
+Update
+Vision
+Visiting hours
+Wallet updated
+Wallets
+Week starts Monday. Month starts on the 1st. Year starts on 1 January. All dates are Africa/Kigali.
+Welcome
+WhatsApp
+WhatsApp the school
+Who sent them
+Write the notice and the parent phone numbers. Each parent uses one message from the Message Wallet.
+Year
+you@school.rw
+Your password
+Your school is under IshuriApp review. It is not public yet.

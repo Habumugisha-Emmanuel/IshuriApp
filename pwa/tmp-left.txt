@@ -1,0 +1,1848 @@
+src/App.jsx:12: Discover
+src/App.jsx:13: Rankings
+src/App.jsx:14: Events
+src/App.jsx:15: Now
+src/App.jsx:91: orb one
+src/App.jsx:92: orb two
+src/App.jsx:93: orb three
+src/App.jsx:95:  cy=
+src/App.jsx:95:  r=
+src/App.jsx:96:  cy=
+src/App.jsx:96:  r=
+src/App.jsx:97:  cy=
+src/App.jsx:97:  r=
+src/App.jsx:101:  onClick={(event) => { event.preventDefault(); go(
+src/App.jsx:102: )} width=
+src/App.jsx:102:  height=
+src/App.jsx:122:  active
+src/App.jsx:122: }`} onClick={() => go(session ? 
+src/App.jsx:124: ) : t(
+src/App.jsx:159: Error
+src/App.jsx:159: Warning
+src/App.jsx:159: Alert
+src/App.jsx:159: Success
+src/App.jsx:170: track busy-track
+src/App.jsx:263:  on
+src/App.jsx:264: Sound on
+src/App.jsx:264: Tap for sound
+src/App.jsx:309: ad-reel home-stage
+src/App.jsx:314:  className=
+src/App.jsx:318: kicker ad-pill
+src/App.jsx:324: POST
+src/App.jsx:325: Open
+src/App.jsx:341:  now-stage
+src/App.jsx:341: }${docked && slide.kind === 
+src/App.jsx:341:  now-docked
+src/App.jsx:345:  className={mode === 
+src/App.jsx:345: ad-photo now-photo
+src/App.jsx:352: POST
+src/App.jsx:353: Open
+src/App.jsx:376: M0,64 C160,104 320,24 480,64 C640,104 800,24 960,64 C1120,104 1280,24 1440,64 L1440,140 L0,140 Z
+src/App.jsx:379:  preserveAspectRatio=
+src/App.jsx:379:  aria-hidden=
+src/App.jsx:382:  preserveAspectRatio=
+src/App.jsx:382:  aria-hidden=
+src/App.jsx:392: rgba(79,195,247,0.55)
+src/App.jsx:393: rgba(21,101,192,0.28)
+src/App.jsx:394: rgba(255,255,255,0.82)
+src/App.jsx:401:  role=
+src/App.jsx:401:  aria-label={t(
+src/App.jsx:403: crestSky
+src/App.jsx:403:  y1=
+src/App.jsx:403:  x2=
+src/App.jsx:403:  y2=
+src/App.jsx:404:  stopColor=
+src/App.jsx:405:  stopColor=
+src/App.jsx:407: crestRoof
+src/App.jsx:407:  y1=
+src/App.jsx:407:  x2=
+src/App.jsx:407:  y2=
+src/App.jsx:408:  stopColor=
+src/App.jsx:409:  stopColor=
+src/App.jsx:411: crestLift
+src/App.jsx:411:  y=
+src/App.jsx:411:  width=
+src/App.jsx:411:  height=
+src/App.jsx:412:  dy=
+src/App.jsx:412:  stdDeviation=
+src/App.jsx:412:  floodColor=
+src/App.jsx:412:  floodOpacity=
+src/App.jsx:415:  y=
+src/App.jsx:415:  width=
+src/App.jsx:415:  height=
+src/App.jsx:415:  rx=
+src/App.jsx:415:  fill=
+src/App.jsx:416:  cy=
+src/App.jsx:416:  r=
+src/App.jsx:416:  fill=
+src/App.jsx:416:  opacity=
+src/App.jsx:417:  cy=
+src/App.jsx:417:  rx=
+src/App.jsx:417:  ry=
+src/App.jsx:417:  fill=
+src/App.jsx:418:  cy=
+src/App.jsx:418:  rx=
+src/App.jsx:418:  ry=
+src/App.jsx:418:  fill=
+src/App.jsx:419: M18 196 C70 168 150 176 210 198 C150 214 60 220 18 208 Z
+src/App.jsx:420:  cy=
+src/App.jsx:420:  rx=
+src/App.jsx:420:  ry=
+src/App.jsx:420:  fill=
+src/App.jsx:421: M30 118 L74 72 L118 118 Z
+src/App.jsx:421: url(#crestRoof)
+src/App.jsx:422:  y=
+src/App.jsx:422:  width=
+src/App.jsx:422:  height=
+src/App.jsx:422:  fill=
+src/App.jsx:423: M75.4 56 h14 l-4 4.5 4 4.5 h-14 Z
+src/App.jsx:424:  y=
+src/App.jsx:424:  width=
+src/App.jsx:424:  height=
+src/App.jsx:424:  rx=
+src/App.jsx:424:  fill=
+src/App.jsx:424:  filter=
+src/App.jsx:425:  cy=
+src/App.jsx:425:  r=
+src/App.jsx:425:  fill=
+src/App.jsx:426:  cy=
+src/App.jsx:426:  r=
+src/App.jsx:426:  fill=
+src/App.jsx:427: M74 104 V100.5 M74 104 L77.2 106
+src/App.jsx:427:  strokeLinecap=
+src/App.jsx:428:  y=
+src/App.jsx:428:  width=
+src/App.jsx:428:  height=
+src/App.jsx:428:  rx=
+src/App.jsx:428:  fill=
+src/App.jsx:429:  y=
+src/App.jsx:429:  width=
+src/App.jsx:429:  height=
+src/App.jsx:429:  rx=
+src/App.jsx:429:  fill=
+src/App.jsx:430: M58 132 v13 M50 138.5 h16 M90 132 v13 M82 138.5 h16
+src/App.jsx:431:  y=
+src/App.jsx:431:  width=
+src/App.jsx:431:  height=
+src/App.jsx:431:  rx=
+src/App.jsx:431:  fill=
+src/App.jsx:432:  cy=
+src/App.jsx:432:  r=
+src/App.jsx:432:  fill=
+src/App.jsx:433: M120 96 C168 46 214 40 268 72
+src/App.jsx:433:  strokeLinecap=
+src/App.jsx:434:  fill=
+src/App.jsx:434:  stroke=
+src/App.jsx:434:  strokeWidth=
+src/App.jsx:435: M120 96 C168 46 214 40 268 72
+src/App.jsx:437:  y=
+src/App.jsx:437:  width=
+src/App.jsx:437:  height=
+src/App.jsx:437:  rx=
+src/App.jsx:437:  fill=
+src/App.jsx:438:  cy=
+src/App.jsx:438:  r=
+src/App.jsx:438:  fill=
+src/App.jsx:439: M148 146 C150 128 174 128 176 146 C170 136 154 136 148 146
+src/App.jsx:440:  cy=
+src/App.jsx:440:  r=
+src/App.jsx:440:  fill=
+src/App.jsx:441:  cy=
+src/App.jsx:441:  r=
+src/App.jsx:441:  fill=
+src/App.jsx:442: M156 157 Q162 161 168 157
+src/App.jsx:442:  strokeLinecap=
+src/App.jsx:443:  y=
+src/App.jsx:443:  width=
+src/App.jsx:443:  height=
+src/App.jsx:443:  rx=
+src/App.jsx:443:  fill=
+src/App.jsx:444:  y=
+src/App.jsx:444:  width=
+src/App.jsx:444:  height=
+src/App.jsx:444:  rx=
+src/App.jsx:444:  fill=
+src/App.jsx:445:  y=
+src/App.jsx:445:  width=
+src/App.jsx:445:  height=
+src/App.jsx:445:  rx=
+src/App.jsx:445:  fill=
+src/App.jsx:446:  cy=
+src/App.jsx:446:  r=
+src/App.jsx:446:  fill=
+src/App.jsx:447: M193 114 C196 92 224 92 227 114 C220 100 200 100 193 114
+src/App.jsx:448:  cy=
+src/App.jsx:448:  r=
+src/App.jsx:448:  fill=
+src/App.jsx:449:  cy=
+src/App.jsx:449:  r=
+src/App.jsx:449:  fill=
+src/App.jsx:450: M203 126 Q210 131 217 126
+src/App.jsx:450:  strokeLinecap=
+src/App.jsx:451:  y=
+src/App.jsx:451:  width=
+src/App.jsx:451:  height=
+src/App.jsx:451:  rx=
+src/App.jsx:451:  fill=
+src/App.jsx:452: M204 142 L210 154 L216 142
+src/App.jsx:453: M228 150 Q248 162 266 168
+src/App.jsx:453:  strokeLinecap=
+src/App.jsx:454:  cy=
+src/App.jsx:454:  r=
+src/App.jsx:454:  fill=
+src/App.jsx:455:  y=
+src/App.jsx:455:  width=
+src/App.jsx:455:  height=
+src/App.jsx:455:  rx=
+src/App.jsx:455:  fill=
+src/App.jsx:456:  y=
+src/App.jsx:456:  width=
+src/App.jsx:456:  height=
+src/App.jsx:456:  rx=
+src/App.jsx:456:  fill=
+src/App.jsx:457: url(#crestLift)
+src/App.jsx:458:  y=
+src/App.jsx:458:  width=
+src/App.jsx:458:  height=
+src/App.jsx:458:  rx=
+src/App.jsx:458:  fill=
+src/App.jsx:459:  y=
+src/App.jsx:459:  width=
+src/App.jsx:459:  height=
+src/App.jsx:459:  rx=
+src/App.jsx:459:  fill=
+src/App.jsx:460:  y=
+src/App.jsx:460:  width=
+src/App.jsx:460:  height=
+src/App.jsx:460:  rx=
+src/App.jsx:460:  fill=
+src/App.jsx:461:  y=
+src/App.jsx:461:  width=
+src/App.jsx:461:  height=
+src/App.jsx:461:  rx=
+src/App.jsx:461:  fill=
+src/App.jsx:464:  y=
+src/App.jsx:464:  width=
+src/App.jsx:464:  height=
+src/App.jsx:464:  rx=
+src/App.jsx:464:  fill=
+src/App.jsx:465:  y=
+src/App.jsx:465:  textAnchor=
+src/App.jsx:465:  fill=
+src/App.jsx:465:  fontSize=
+src/App.jsx:465:  fontWeight=
+src/App.jsx:465:  letterSpacing=
+src/App.jsx:465:  fontFamily=
+src/App.jsx:465: >{t(
+src/App.jsx:466:  y=
+src/App.jsx:466:  textAnchor=
+src/App.jsx:466:  fill=
+src/App.jsx:466:  fontSize=
+src/App.jsx:466:  fontWeight=
+src/App.jsx:466:  fontFamily=
+src/App.jsx:468: crest-msg late
+src/App.jsx:469:  y=
+src/App.jsx:469:  width=
+src/App.jsx:469:  height=
+src/App.jsx:469:  rx=
+src/App.jsx:469:  fill=
+src/App.jsx:470:  cy=
+src/App.jsx:470:  r=
+src/App.jsx:470:  fill=
+src/App.jsx:471: M313 157 l3.2 3.2 6.4-7
+src/App.jsx:471:  strokeLinecap=
+src/App.jsx:471:  strokeLinejoin=
+src/App.jsx:472:  y=
+src/App.jsx:472:  fill=
+src/App.jsx:472:  fontSize=
+src/App.jsx:472:  fontWeight=
+src/App.jsx:472:  fontFamily=
+src/App.jsx:472: >{t(
+src/App.jsx:473:  y=
+src/App.jsx:473:  fill=
+src/App.jsx:473:  fontSize=
+src/App.jsx:473:  fontFamily=
+src/App.jsx:473: >{t(
+src/App.jsx:476:  cy=
+src/App.jsx:476:  r=
+src/App.jsx:476:  fill=
+src/App.jsx:477:  cy=
+src/App.jsx:477:  r=
+src/App.jsx:477:  fill=
+src/App.jsx:508:  is-ready
+src/App.jsx:547: page home-page
+src/App.jsx:562: All
+src/App.jsx:563: Primary
+src/App.jsx:564: Secondary
+src/App.jsx:565: TVET
+src/App.jsx:566: University
+src/App.jsx:578: school skel-card
+src/App.jsx:579: cover skel
+src/App.jsx:581: logo skel
+src/App.jsx:582: skel short
+src/App.jsx:587: ad side-note skel-card
+src/App.jsx:588: skel skel-media
+src/App.jsx:590: skel short
+src/App.jsx:606: Rwanda
+src/App.jsx:613: ad side-note
+src/App.jsx:619: )}</strong><br />{t(
+src/App.jsx:640: ad panel skel-card
+src/App.jsx:640: skel skel-stage
+src/App.jsx:640: skel short
+src/App.jsx:642: ad panel
+src/App.jsx:689:  role=
+src/App.jsx:689:  aria-label={t(
+src/App.jsx:691: eventSky
+src/App.jsx:691:  y1=
+src/App.jsx:691:  x2=
+src/App.jsx:691:  y2=
+src/App.jsx:692:  stopColor=
+src/App.jsx:693:  stopColor=
+src/App.jsx:696:  y=
+src/App.jsx:696:  width=
+src/App.jsx:696:  height=
+src/App.jsx:696:  rx=
+src/App.jsx:696:  fill=
+src/App.jsx:697:  y=
+src/App.jsx:697:  width=
+src/App.jsx:697:  height=
+src/App.jsx:697:  rx=
+src/App.jsx:697:  fill=
+src/App.jsx:698: M28 56a18 18 0 0 1 18-18h112a18 18 0 0 1 18 18v16H28V56z
+src/App.jsx:699:  cy=
+src/App.jsx:699:  r=
+src/App.jsx:699:  fill=
+src/App.jsx:700:  cy=
+src/App.jsx:700:  r=
+src/App.jsx:700:  fill=
+src/App.jsx:703:  cy=
+src/App.jsx:703:  r=
+src/App.jsx:703:  fill=
+src/App.jsx:704: M224 52h16v5a8 8 0 0 1-16 0v-5zM224 55h-4a4 4 0 0 0 4 5M240 55h4a4 4 0 0 1-4 5M232 65v4M226 76h12
+src/App.jsx:704:  strokeLinejoin=
+src/App.jsx:704:  strokeLinecap=
+src/App.jsx:706: events-float late
+src/App.jsx:707:  cy=
+src/App.jsx:707:  r=
+src/App.jsx:707:  fill=
+src/App.jsx:708: M256 118l12-8 12 8v4h-24v-4zM260 122h16v8h-16z
+src/App.jsx:708:  strokeLinejoin=
+src/App.jsx:710: events-float later
+src/App.jsx:711:  cy=
+src/App.jsx:711:  r=
+src/App.jsx:711:  fill=
+src/App.jsx:712:  cy=
+src/App.jsx:712:  r=
+src/App.jsx:712:  fill=
+src/App.jsx:712:  stroke=
+src/App.jsx:712:  strokeWidth=
+src/App.jsx:713: M188 140c1-4 3.4-6 8-6s7 2 8 6
+src/App.jsx:713:  strokeLinecap=
+src/App.jsx:722: en-GB
+src/App.jsx:723: en-GB
+src/App.jsx:726: en-GB
+src/App.jsx:727: Date to be set
+src/App.jsx:773: skel skel-stage
+src/App.jsx:774: skel short
+src/App.jsx:819: board rank-list
+src/App.jsx:821: )}</th><th>{t(
+src/App.jsx:821: )}</th><th>{t(
+src/App.jsx:821: )}</th><th>{t(
+src/App.jsx:828: } · {school.performanceSummary || t(
+src/App.jsx:839: Home
+src/App.jsx:839: About
+src/App.jsx:839: Staff
+src/App.jsx:839: Events
+src/App.jsx:839: Gallery
+src/App.jsx:839: Contact
+src/App.jsx:876: ArrowRight
+src/App.jsx:877: ArrowLeft
+src/App.jsx:894: en-GB
+src/App.jsx:903: lightbox-step prev
+src/App.jsx:914: Campus
+src/App.jsx:919: lightbox-step next
+src/App.jsx:931: Home
+src/App.jsx:935: Home
+src/App.jsx:954: campus-hero skel
+src/App.jsx:957: skel short
+src/App.jsx:976:  onError={() => setLogoFailed(true)} /> : <span>{(school.name || 
+src/App.jsx:979: Admin verified
+src/App.jsx:979: Unverified
+src/App.jsx:989: }</strong><span>{t(
+src/App.jsx:990: }</strong><span>{t(
+src/App.jsx:991: }</strong><span>{t(
+src/App.jsx:1004: Home
+src/App.jsx:1007: welcome-card welcome-lead
+src/App.jsx:1040: en-GB
+src/App.jsx:1046: About
+src/App.jsx:1064: campus-card campus-results
+src/App.jsx:1069: } {result.notes || 
+src/App.jsx:1076: Staff
+src/App.jsx:1077: muted campus-empty
+src/App.jsx:1085: Teacher
+src/App.jsx:1085: ), leadership: 
+src/App.jsx:1085: , support: 
+src/App.jsx:1085: , admin: 
+src/App.jsx:1085:  }[member.category] || member.category || 
+src/App.jsx:1087: campus-card person
+src/App.jsx:1097: )}</dt><dd>{member.roleTitle || t(
+src/App.jsx:1099: )}</dt><dd>{member.qualifications || t(
+src/App.jsx:1102: )}</dt><dd>{member.email || t(
+src/App.jsx:1103: )}</dt><dd>{member.phone || member.whatsapp || t(
+src/App.jsx:1105: )}</dt><dd>{classNames.length ? classNames.join(
+src/App.jsx:1105: ) : t(
+src/App.jsx:1106: )}</dt><dd>{subjectNames.length ? subjectNames.join(
+src/App.jsx:1106: ) : t(
+src/App.jsx:1107: )}</dt><dd>{teaching.join(
+src/App.jsx:1111: )}`}><Icon name=
+src/App.jsx:1111:  />{t(
+src/App.jsx:1122: Events
+src/App.jsx:1123: muted campus-empty
+src/App.jsx:1124: event-board campus-events
+src/App.jsx:1131: Gallery
+src/App.jsx:1132: muted campus-empty
+src/App.jsx:1140: Contact
+src/App.jsx:1141: campus-card contact-sheet
+src/App.jsx:1149: )}`}><Icon name=
+src/App.jsx:1149:  />{t(
+src/App.jsx:1151: )}</a> : <button className=
+src/App.jsx:1151:  type=
+src/App.jsx:1151:  onClick={() => notify(
+src/App.jsx:1151: , place)}><Icon name=
+src/App.jsx:1151:  />{t(
+src/App.jsx:1170: xMidYMid slice
+src/App.jsx:1177: M156 348 C118 300, 132 250, 168 214
+src/App.jsx:1178: M244 348 C282 300, 268 250, 232 214
+src/App.jsx:1180:  preserveAspectRatio=
+src/App.jsx:1180:  role=
+src/App.jsx:1180:  aria-label={t(
+src/App.jsx:1182: gateArrow
+src/App.jsx:1182:  markerHeight=
+src/App.jsx:1182:  refX=
+src/App.jsx:1182:  refY=
+src/App.jsx:1182:  orient=
+src/App.jsx:1183: M0 0 L10 5 L0 10 Z
+src/App.jsx:1185: gateArrowSky
+src/App.jsx:1185:  markerHeight=
+src/App.jsx:1185:  refX=
+src/App.jsx:1185:  refY=
+src/App.jsx:1185:  orient=
+src/App.jsx:1186: M0 0 L10 5 L0 10 Z
+src/App.jsx:1189:  height=
+src/App.jsx:1189:  fill=
+src/App.jsx:1190:  y=
+src/App.jsx:1190:  width=
+src/App.jsx:1190:  height=
+src/App.jsx:1190:  rx=
+src/App.jsx:1190:  fill=
+src/App.jsx:1191:  y=
+src/App.jsx:1191:  textAnchor=
+src/App.jsx:1191:  fill=
+src/App.jsx:1191:  fontSize=
+src/App.jsx:1191:  fontWeight=
+src/App.jsx:1191:  fontFamily=
+src/App.jsx:1191: >{t(
+src/App.jsx:1192:  y=
+src/App.jsx:1192:  textAnchor=
+src/App.jsx:1192:  fill=
+src/App.jsx:1192:  fontSize=
+src/App.jsx:1192:  fontWeight=
+src/App.jsx:1192:  fontFamily=
+src/App.jsx:1192: >{t(
+src/App.jsx:1195:  y=
+src/App.jsx:1195:  width=
+src/App.jsx:1195:  height=
+src/App.jsx:1195:  rx=
+src/App.jsx:1195:  fill=
+src/App.jsx:1196:  y=
+src/App.jsx:1196:  width=
+src/App.jsx:1196:  height=
+src/App.jsx:1196:  rx=
+src/App.jsx:1196:  fill=
+src/App.jsx:1197:  y=
+src/App.jsx:1197:  textAnchor=
+src/App.jsx:1197:  fill=
+src/App.jsx:1197:  fontSize=
+src/App.jsx:1197:  fontWeight=
+src/App.jsx:1197:  fontFamily=
+src/App.jsx:1198:  y=
+src/App.jsx:1198:  textAnchor=
+src/App.jsx:1198:  fill=
+src/App.jsx:1198:  fontSize=
+src/App.jsx:1198:  fontWeight=
+src/App.jsx:1198:  fontFamily=
+src/App.jsx:1198: >{t(
+src/App.jsx:1200: M202 128 q8 -7 0 -14
+src/App.jsx:1200:  strokeLinecap=
+src/App.jsx:1201: M210 132 q14 -11 0 -22
+src/App.jsx:1201:  strokeLinecap=
+src/App.jsx:1203:  y=
+src/App.jsx:1203:  width=
+src/App.jsx:1203:  height=
+src/App.jsx:1203:  rx=
+src/App.jsx:1203:  fill=
+src/App.jsx:1204:  y=
+src/App.jsx:1204:  width=
+src/App.jsx:1204:  height=
+src/App.jsx:1204:  rx=
+src/App.jsx:1204:  fill=
+src/App.jsx:1205:  y=
+src/App.jsx:1205:  textAnchor=
+src/App.jsx:1205:  fill=
+src/App.jsx:1205:  fontSize=
+src/App.jsx:1205:  fontWeight=
+src/App.jsx:1205:  fontFamily=
+src/App.jsx:1205: >{t(
+src/App.jsx:1206:  y=
+src/App.jsx:1206:  textAnchor=
+src/App.jsx:1206:  fill=
+src/App.jsx:1206:  fontSize=
+src/App.jsx:1206:  fontWeight=
+src/App.jsx:1206:  fontFamily=
+src/App.jsx:1206: >{t(
+src/App.jsx:1207: gate-wave late
+src/App.jsx:1208: M198 128 q-8 -7 0 -14
+src/App.jsx:1208:  strokeLinecap=
+src/App.jsx:1209: M190 132 q-14 -11 0 -22
+src/App.jsx:1209:  strokeLinecap=
+src/App.jsx:1211:  y=
+src/App.jsx:1211:  width=
+src/App.jsx:1211:  height=
+src/App.jsx:1211:  rx=
+src/App.jsx:1211:  fill=
+src/App.jsx:1212:  y=
+src/App.jsx:1212:  width=
+src/App.jsx:1212:  height=
+src/App.jsx:1212:  rx=
+src/App.jsx:1212:  fill=
+src/App.jsx:1213:  y=
+src/App.jsx:1213:  width=
+src/App.jsx:1213:  height=
+src/App.jsx:1213:  rx=
+src/App.jsx:1213:  fill=
+src/App.jsx:1214:  y=
+src/App.jsx:1214:  width=
+src/App.jsx:1214:  height=
+src/App.jsx:1214:  rx=
+src/App.jsx:1214:  fill=
+src/App.jsx:1215:  y=
+src/App.jsx:1215:  textAnchor=
+src/App.jsx:1215:  fill=
+src/App.jsx:1215:  fontSize=
+src/App.jsx:1215:  fontWeight=
+src/App.jsx:1215:  fontFamily=
+src/App.jsx:1216:  y=
+src/App.jsx:1216:  textAnchor=
+src/App.jsx:1216:  fill=
+src/App.jsx:1216:  fontSize=
+src/App.jsx:1216:  fontWeight=
+src/App.jsx:1216:  fontFamily=
+src/App.jsx:1216: >{t(
+src/App.jsx:1217:  y=
+src/App.jsx:1217:  width=
+src/App.jsx:1217:  height=
+src/App.jsx:1217:  rx=
+src/App.jsx:1217:  fill=
+src/App.jsx:1218:  y=
+src/App.jsx:1218:  width=
+src/App.jsx:1218:  height=
+src/App.jsx:1218:  rx=
+src/App.jsx:1218:  fill=
+src/App.jsx:1219:  y=
+src/App.jsx:1219:  width=
+src/App.jsx:1219:  height=
+src/App.jsx:1219:  rx=
+src/App.jsx:1219:  fill=
+src/App.jsx:1220:  y=
+src/App.jsx:1220:  textAnchor=
+src/App.jsx:1220:  fill=
+src/App.jsx:1220:  fontSize=
+src/App.jsx:1220:  fontWeight=
+src/App.jsx:1220:  fontFamily=
+src/App.jsx:1220: >{t(
+src/App.jsx:1221:  y=
+src/App.jsx:1221:  width=
+src/App.jsx:1221:  height=
+src/App.jsx:1221:  rx=
+src/App.jsx:1221:  fill=
+src/App.jsx:1224:  y=
+src/App.jsx:1224:  textAnchor=
+src/App.jsx:1224:  fill=
+src/App.jsx:1224:  fontSize=
+src/App.jsx:1224:  fontWeight=
+src/App.jsx:1224:  fontFamily=
+src/App.jsx:1224: >{t(
+src/App.jsx:1225:  y=
+src/App.jsx:1225:  textAnchor=
+src/App.jsx:1225:  fill=
+src/App.jsx:1225:  fontSize=
+src/App.jsx:1225:  fontWeight=
+src/App.jsx:1225:  fontFamily=
+src/App.jsx:1225: >{t(
+src/App.jsx:1226:  strokeLinecap=
+src/App.jsx:1227:  strokeLinecap=
+src/App.jsx:1227:  markerEnd=
+src/App.jsx:1228:  fill=
+src/App.jsx:1228:  stroke=
+src/App.jsx:1228:  strokeWidth=
+src/App.jsx:1231:  strokeLinecap=
+src/App.jsx:1232: gate-signal late
+src/App.jsx:1232:  strokeLinecap=
+src/App.jsx:1232:  markerEnd=
+src/App.jsx:1233:  fill=
+src/App.jsx:1233:  stroke=
+src/App.jsx:1233:  strokeWidth=
+src/App.jsx:1273: secret-field gate-input
+src/App.jsx:1276: Hide password
+src/App.jsx:1276: Show password
+src/App.jsx:1276: Hide
+src/App.jsx:1276: Show
+src/workspace.jsx:30: ) : t(
+src/workspace.jsx:31: Hide
+src/workspace.jsx:31: Show
+src/workspace.jsx:50: Overview
+src/workspace.jsx:50: ), hint: t(
+src/workspace.jsx:51: Overview
+src/workspace.jsx:51: Messages
+src/workspace.jsx:52: Schools
+src/workspace.jsx:52: ), hint: t(
+src/workspace.jsx:53: Schools
+src/workspace.jsx:53: ), hint: t(
+src/workspace.jsx:54: Platform
+src/workspace.jsx:54: ), hint: t(
+src/workspace.jsx:59: School
+src/workspace.jsx:59: Messages
+src/workspace.jsx:60: School
+src/workspace.jsx:60: ), hint: t(
+src/workspace.jsx:61: People
+src/workspace.jsx:61: ), hint: t(
+src/workspace.jsx:65: People
+src/workspace.jsx:65: Classes
+src/workspace.jsx:66: People
+src/workspace.jsx:66: Students
+src/workspace.jsx:70: School life
+src/workspace.jsx:70: Events
+src/workspace.jsx:71: School life
+src/workspace.jsx:71: ), hint: t(
+src/workspace.jsx:72: School life
+src/workspace.jsx:72: ), hint: t(
+src/workspace.jsx:77: My class
+src/workspace.jsx:77: ), hint: t(
+src/workspace.jsx:78: My class
+src/workspace.jsx:78: Assessments
+src/workspace.jsx:79: My class
+src/workspace.jsx:79: ), hint: t(
+src/workspace.jsx:84: Discipline
+src/workspace.jsx:84: ), hint: t(
+src/workspace.jsx:85: Discipline
+src/workspace.jsx:85: ), hint: t(
+src/workspace.jsx:95: ).split(
+src/workspace.jsx:116:  chat-page
+src/workspace.jsx:117:  has-bell
+src/workspace.jsx:117: }${current === 
+src/workspace.jsx:117:  is-overview
+src/workspace.jsx:119: ).replaceAll(
+src/workspace.jsx:123: ).replaceAll(
+src/workspace.jsx:124: Sign in, then follow the steps for your role.
+src/workspace.jsx:135: work-nav panel
+src/workspace.jsx:136: } onClick={() => go(
+src/workspace.jsx:136: )}><Icon name=
+src/workspace.jsx:136:  />{t(
+src/workspace.jsx:175: POST
+src/workspace.jsx:188: Directors
+src/workspace.jsx:188: Teachers
+src/workspace.jsx:188: Discipline
+src/workspace.jsx:188: Accountants
+src/workspace.jsx:201: ), err.message, 
+src/workspace.jsx:220: chart-card pulse-card
+src/workspace.jsx:225: Checking the register…
+src/workspace.jsx:228: Schools and staff trend
+src/workspace.jsx:229:  height=
+src/workspace.jsx:232: schoolsFill
+src/workspace.jsx:232:  y1=
+src/workspace.jsx:232:  x2=
+src/workspace.jsx:232:  y2=
+src/workspace.jsx:233:  stopColor=
+src/workspace.jsx:234:  stopColor=
+src/workspace.jsx:236: staffFill
+src/workspace.jsx:236:  y1=
+src/workspace.jsx:236:  x2=
+src/workspace.jsx:236:  y2=
+src/workspace.jsx:237:  stopColor=
+src/workspace.jsx:238:  stopColor=
+src/workspace.jsx:246: Schools
+src/workspace.jsx:246: url(#schoolsFill)
+src/workspace.jsx:247: Staff
+src/workspace.jsx:247: url(#staffFill)
+src/workspace.jsx:252: pulse-chart bars
+src/workspace.jsx:253:  height=
+src/workspace.jsx:260: Directors
+src/workspace.jsx:261: Teachers
+src/workspace.jsx:262: Discipline
+src/workspace.jsx:263: Accountants
+src/workspace.jsx:268: chart-card pulse-card
+src/workspace.jsx:276: Online schools
+src/workspace.jsx:280: Checking who is online…
+src/workspace.jsx:283: Offline
+src/workspace.jsx:284: fill live
+src/workspace.jsx:299: tel:+250795645441
+src/workspace.jsx:312: School life
+src/workspace.jsx:313: My class
+src/workspace.jsx:319: overview-crest sale-crest
+src/workspace.jsx:319:  role=
+src/workspace.jsx:319:  aria-label={t(
+src/workspace.jsx:320:  y=
+src/workspace.jsx:320:  width=
+src/workspace.jsx:320:  height=
+src/workspace.jsx:320:  rx=
+src/workspace.jsx:320:  fill=
+src/workspace.jsx:321:  y=
+src/workspace.jsx:321:  width=
+src/workspace.jsx:321:  height=
+src/workspace.jsx:321:  rx=
+src/workspace.jsx:321:  fill=
+src/workspace.jsx:322:  cy=
+src/workspace.jsx:322:  r=
+src/workspace.jsx:322:  fill=
+src/workspace.jsx:323: M46 108c3-20 12-30 24-30s21 10 24 30
+src/workspace.jsx:324:  y=
+src/workspace.jsx:324:  textAnchor=
+src/workspace.jsx:324:  fill=
+src/workspace.jsx:324:  fontSize=
+src/workspace.jsx:324:  fontWeight=
+src/workspace.jsx:324:  fontFamily=
+src/workspace.jsx:324: >{t(
+src/workspace.jsx:326:  y=
+src/workspace.jsx:326:  width=
+src/workspace.jsx:326:  height=
+src/workspace.jsx:326:  rx=
+src/workspace.jsx:326:  fill=
+src/workspace.jsx:327:  y=
+src/workspace.jsx:327:  textAnchor=
+src/workspace.jsx:327:  fill=
+src/workspace.jsx:327:  fontSize=
+src/workspace.jsx:327:  fontWeight=
+src/workspace.jsx:327:  fontFamily=
+src/workspace.jsx:327: >{t(
+src/workspace.jsx:329: M146 80 H214
+src/workspace.jsx:330: M206 74l10 6-10 6
+src/workspace.jsx:330:  strokeLinecap=
+src/workspace.jsx:330:  strokeLinejoin=
+src/workspace.jsx:331: sale-pack late
+src/workspace.jsx:332:  y=
+src/workspace.jsx:332:  width=
+src/workspace.jsx:332:  height=
+src/workspace.jsx:332:  rx=
+src/workspace.jsx:332:  fill=
+src/workspace.jsx:333:  y=
+src/workspace.jsx:333:  textAnchor=
+src/workspace.jsx:333:  fill=
+src/workspace.jsx:333:  fontSize=
+src/workspace.jsx:333:  fontWeight=
+src/workspace.jsx:333:  fontFamily=
+src/workspace.jsx:333: >{t(
+src/workspace.jsx:335: sale-pack later
+src/workspace.jsx:336:  y=
+src/workspace.jsx:336:  width=
+src/workspace.jsx:336:  height=
+src/workspace.jsx:336:  rx=
+src/workspace.jsx:336:  fill=
+src/workspace.jsx:337:  y=
+src/workspace.jsx:337:  textAnchor=
+src/workspace.jsx:337:  fill=
+src/workspace.jsx:337:  fontSize=
+src/workspace.jsx:337:  fontWeight=
+src/workspace.jsx:337:  fontFamily=
+src/workspace.jsx:337: >{t(
+src/workspace.jsx:340:  y=
+src/workspace.jsx:340:  width=
+src/workspace.jsx:340:  height=
+src/workspace.jsx:340:  rx=
+src/workspace.jsx:340:  fill=
+src/workspace.jsx:341: M228 46h56
+src/workspace.jsx:342:  y=
+src/workspace.jsx:342:  width=
+src/workspace.jsx:342:  height=
+src/workspace.jsx:342:  rx=
+src/workspace.jsx:342:  fill=
+src/workspace.jsx:343:  y=
+src/workspace.jsx:343:  width=
+src/workspace.jsx:343:  height=
+src/workspace.jsx:343:  rx=
+src/workspace.jsx:343:  fill=
+src/workspace.jsx:344:  y=
+src/workspace.jsx:344:  width=
+src/workspace.jsx:344:  height=
+src/workspace.jsx:344:  rx=
+src/workspace.jsx:344:  fill=
+src/workspace.jsx:345:  y=
+src/workspace.jsx:345:  width=
+src/workspace.jsx:345:  height=
+src/workspace.jsx:345:  rx=
+src/workspace.jsx:345:  fill=
+src/workspace.jsx:346:  y=
+src/workspace.jsx:346:  width=
+src/workspace.jsx:346:  height=
+src/workspace.jsx:346:  rx=
+src/workspace.jsx:346:  fill=
+src/workspace.jsx:347:  y=
+src/workspace.jsx:347:  textAnchor=
+src/workspace.jsx:347:  fill=
+src/workspace.jsx:347:  fontSize=
+src/workspace.jsx:347:  fontWeight=
+src/workspace.jsx:347:  fontFamily=
+src/workspace.jsx:347: >{t(
+src/workspace.jsx:349:  y=
+src/workspace.jsx:349:  textAnchor=
+src/workspace.jsx:349:  fill=
+src/workspace.jsx:349:  fontSize=
+src/workspace.jsx:349:  fontWeight=
+src/workspace.jsx:349:  fontFamily=
+src/workspace.jsx:349: >{t(
+src/workspace.jsx:351:  y=
+src/workspace.jsx:351:  width=
+src/workspace.jsx:351:  height=
+src/workspace.jsx:351:  rx=
+src/workspace.jsx:351:  fill=
+src/workspace.jsx:352: M292 46h56
+src/workspace.jsx:353:  y=
+src/workspace.jsx:353:  width=
+src/workspace.jsx:353:  height=
+src/workspace.jsx:353:  rx=
+src/workspace.jsx:353:  fill=
+src/workspace.jsx:354:  y=
+src/workspace.jsx:354:  width=
+src/workspace.jsx:354:  height=
+src/workspace.jsx:354:  rx=
+src/workspace.jsx:354:  fill=
+src/workspace.jsx:355:  y=
+src/workspace.jsx:355:  width=
+src/workspace.jsx:355:  height=
+src/workspace.jsx:355:  rx=
+src/workspace.jsx:355:  fill=
+src/workspace.jsx:356:  y=
+src/workspace.jsx:356:  width=
+src/workspace.jsx:356:  height=
+src/workspace.jsx:356:  rx=
+src/workspace.jsx:356:  fill=
+src/workspace.jsx:357:  y=
+src/workspace.jsx:357:  width=
+src/workspace.jsx:357:  height=
+src/workspace.jsx:357:  rx=
+src/workspace.jsx:357:  fill=
+src/workspace.jsx:358:  y=
+src/workspace.jsx:358:  textAnchor=
+src/workspace.jsx:358:  fill=
+src/workspace.jsx:358:  fontSize=
+src/workspace.jsx:358:  fontWeight=
+src/workspace.jsx:358:  fontFamily=
+src/workspace.jsx:358: >{t(
+src/workspace.jsx:360:  y=
+src/workspace.jsx:360:  textAnchor=
+src/workspace.jsx:360:  fill=
+src/workspace.jsx:360:  fontSize=
+src/workspace.jsx:360:  fontWeight=
+src/workspace.jsx:360:  fontFamily=
+src/workspace.jsx:360: >{t(
+src/workspace.jsx:367:  role=
+src/workspace.jsx:367:  aria-label={t(
+src/workspace.jsx:368:  y=
+src/workspace.jsx:368:  width=
+src/workspace.jsx:368:  height=
+src/workspace.jsx:368:  rx=
+src/workspace.jsx:368:  fill=
+src/workspace.jsx:369:  y=
+src/workspace.jsx:369:  width=
+src/workspace.jsx:369:  height=
+src/workspace.jsx:369:  rx=
+src/workspace.jsx:369:  fill=
+src/workspace.jsx:370: M22 56h96
+src/workspace.jsx:371:  y=
+src/workspace.jsx:371:  width=
+src/workspace.jsx:371:  height=
+src/workspace.jsx:371:  rx=
+src/workspace.jsx:371:  fill=
+src/workspace.jsx:372:  y=
+src/workspace.jsx:372:  width=
+src/workspace.jsx:372:  height=
+src/workspace.jsx:372:  rx=
+src/workspace.jsx:372:  fill=
+src/workspace.jsx:373:  y=
+src/workspace.jsx:373:  width=
+src/workspace.jsx:373:  height=
+src/workspace.jsx:373:  rx=
+src/workspace.jsx:373:  fill=
+src/workspace.jsx:374:  y=
+src/workspace.jsx:374:  width=
+src/workspace.jsx:374:  height=
+src/workspace.jsx:374:  rx=
+src/workspace.jsx:374:  fill=
+src/workspace.jsx:375:  cy=
+src/workspace.jsx:375:  r=
+src/workspace.jsx:375:  fill=
+src/workspace.jsx:376: M134 112c2-18 10-26 16-26s14 8 16 26
+src/workspace.jsx:378:  y=
+src/workspace.jsx:378:  width=
+src/workspace.jsx:378:  height=
+src/workspace.jsx:378:  rx=
+src/workspace.jsx:378:  fill=
+src/workspace.jsx:379:  y=
+src/workspace.jsx:379:  width=
+src/workspace.jsx:379:  height=
+src/workspace.jsx:379:  rx=
+src/workspace.jsx:379:  fill=
+src/workspace.jsx:380:  y=
+src/workspace.jsx:380:  textAnchor=
+src/workspace.jsx:380:  fill=
+src/workspace.jsx:380:  fontSize=
+src/workspace.jsx:380:  fontWeight=
+src/workspace.jsx:380:  fontFamily=
+src/workspace.jsx:381:  y=
+src/workspace.jsx:381:  textAnchor=
+src/workspace.jsx:381:  fill=
+src/workspace.jsx:381:  fontSize=
+src/workspace.jsx:381:  fontFamily=
+src/workspace.jsx:381: >{t(
+src/workspace.jsx:382:  cy=
+src/workspace.jsx:382:  r=
+src/workspace.jsx:382:  fill=
+src/workspace.jsx:398: panel tile
+src/workspace.jsx:399: assess-mark tile-mark
+src/workspace.jsx:407: ico tile-go
+src/workspace.jsx:418: , studentCode: 
+src/workspace.jsx:418: , classRoom: 
+src/workspace.jsx:418: , parentName: 
+src/workspace.jsx:418: , parentPhone: 
+src/workspace.jsx:431: ), err.message, 
+src/workspace.jsx:440: Parent
+src/workspace.jsx:440:  : parent?.fullName || 
+src/workspace.jsx:447: ), t(
+src/workspace.jsx:448: ), t(
+src/workspace.jsx:449: ), t(
+src/workspace.jsx:454: Parent
+src/workspace.jsx:460: ) : t(
+src/workspace.jsx:460: ), t(
+src/workspace.jsx:469: panel form-grid
+src/workspace.jsx:470: Update student
+src/workspace.jsx:470: Register student
+src/workspace.jsx:471: Student name
+src/workspace.jsx:472: Student code
+src/workspace.jsx:475: >{t(
+src/workspace.jsx:479: Parent name
+src/workspace.jsx:480: Parent telephone
+src/workspace.jsx:482: Save changes
+src/workspace.jsx:482: Register student
+src/workspace.jsx:494: muted roster-empty
+src/workspace.jsx:495: table-wrap roster-table
+src/workspace.jsx:512: No.
+src/workspace.jsx:513: Student
+src/workspace.jsx:514: Class
+src/workspace.jsx:515: )} className=
+src/workspace.jsx:516: )} className=
+src/workspace.jsx:516: >{parent?.phone || t(
+src/workspace.jsx:517: Actions
+src/workspace.jsx:522: DELETE
+src/workspace.jsx:550: , email: 
+src/workspace.jsx:550: , phone: 
+src/workspace.jsx:550: , password: 
+src/workspace.jsx:550: , roleTitle: 
+src/workspace.jsx:550: , category: 
+src/workspace.jsx:550: , qualifications: 
+src/workspace.jsx:550: , classRoom: 
+src/workspace.jsx:553: Staff@123
+src/workspace.jsx:567: ), err.message, 
+src/workspace.jsx:574: Staff@123
+src/workspace.jsx:612: PATCH
+src/workspace.jsx:618: ), t(
+src/workspace.jsx:619: ), t(
+src/workspace.jsx:620: ), t(
+src/workspace.jsx:632: ) : form.category === 
+src/workspace.jsx:632:  ? t(
+src/workspace.jsx:632: ) : t(
+src/workspace.jsx:632: ), editingId ? t(
+src/workspace.jsx:632: ) : t(
+src/workspace.jsx:638: panel form-grid
+src/workspace.jsx:639: Update staff
+src/workspace.jsx:639: New account
+src/workspace.jsx:640: Full name
+src/workspace.jsx:641: Role title
+src/workspace.jsx:642: chips span
+src/workspace.jsx:643: Email (login)
+src/workspace.jsx:644: Phone / WhatsApp
+src/workspace.jsx:645: New password
+src/workspace.jsx:645: Password
+src/workspace.jsx:645: Leave blank to keep the current password
+src/workspace.jsx:646: Confirm password
+src/workspace.jsx:646: Leave blank to keep the current password
+src/workspace.jsx:647: Qualifications
+src/workspace.jsx:650: field span
+src/workspace.jsx:652: >{t(
+src/workspace.jsx:656: muted span
+src/workspace.jsx:668: Save changes
+src/workspace.jsx:668: Register and assign teacher
+src/workspace.jsx:668: Register staff member
+src/workspace.jsx:676: }`), ...savedClasses.map((room) => room.name || 
+src/workspace.jsx:677: Subject
+src/workspace.jsx:678: ) : t(
+src/workspace.jsx:680: panel sections
+src/workspace.jsx:683: )}</strong> {member.roleTitle || t(
+src/workspace.jsx:684: )}</strong> {member.email || member.user?.email || t(
+src/workspace.jsx:685: )}</strong> {member.phone || member.whatsapp || t(
+src/workspace.jsx:686: )}</strong> {member.qualifications || t(
+src/workspace.jsx:687: )}</strong> {member.user?.email ? t(
+src/workspace.jsx:687: ) : t(
+src/workspace.jsx:688: )}</strong> {classNames.length ? classNames.join(
+src/workspace.jsx:688: ) : t(
+src/workspace.jsx:690: )}</strong> {taught.join(
+src/workspace.jsx:696: DELETE
+src/workspace.jsx:698: POST
+src/workspace.jsx:698: Published
+src/workspace.jsx:726: ), err.message, 
+src/workspace.jsx:746: ), t(
+src/workspace.jsx:758: panel form-grid
+src/workspace.jsx:764: ), t(
+src/workspace.jsx:765: ), t(
+src/workspace.jsx:783: ) : t(
+src/workspace.jsx:783: ), `${className.trim()}: ${draft.map((subject) => subject.name).join(
+src/workspace.jsx:785: Update class
+src/workspace.jsx:785: Classes
+src/workspace.jsx:786: Class name
+src/workspace.jsx:787: Academic year
+src/workspace.jsx:788: Subject
+src/workspace.jsx:806: Save changes
+src/workspace.jsx:806: Add class
+src/workspace.jsx:811: panel sections
+src/workspace.jsx:813: No teacher yet. Choose one when you register a teacher.
+src/workspace.jsx:814: Subject
+src/workspace.jsx:814: No subjects on this class yet.
+src/workspace.jsx:819: DELETE
+src/workspace.jsx:829: )}-${String(date.getDate()).padStart(2, 
+src/workspace.jsx:833: Daily
+src/workspace.jsx:834: Weekly
+src/workspace.jsx:835: Monthly
+src/workspace.jsx:836: Yearly
+src/workspace.jsx:837: All dates
+src/workspace.jsx:845: , { timeZone: 
+src/workspace.jsx:845: , year: 
+src/workspace.jsx:845: , month: 
+src/workspace.jsx:845: , day: 
+src/workspace.jsx:845: , weekday: 
+src/workspace.jsx:862: , to: 
+src/workspace.jsx:869: , { timeZone: 
+src/workspace.jsx:869: , year: 
+src/workspace.jsx:869: , month: 
+src/workspace.jsx:869: , day: 
+src/workspace.jsx:876: en-GB
+src/workspace.jsx:876: UTC
+src/workspace.jsx:928: field name-field
+src/workspace.jsx:971: report-filters no-print
+src/workspace.jsx:978: From
+src/workspace.jsx:979: To
+src/workspace.jsx:980: Student
+src/workspace.jsx:987:  role=
+src/workspace.jsx:987:  aria-label={t(
+src/workspace.jsx:988:  y=
+src/workspace.jsx:988:  width=
+src/workspace.jsx:988:  height=
+src/workspace.jsx:988:  rx=
+src/workspace.jsx:988:  fill=
+src/workspace.jsx:989:  y=
+src/workspace.jsx:989:  width=
+src/workspace.jsx:989:  height=
+src/workspace.jsx:989:  rx=
+src/workspace.jsx:989:  fill=
+src/workspace.jsx:990: M40 52h72M40 70h56M40 88h64
+src/workspace.jsx:990:  strokeLinecap=
+src/workspace.jsx:991:  y=
+src/workspace.jsx:991:  fill=
+src/workspace.jsx:991:  fontSize=
+src/workspace.jsx:991:  fontWeight=
+src/workspace.jsx:991:  fontFamily=
+src/workspace.jsx:992:  y=
+src/workspace.jsx:992:  fill=
+src/workspace.jsx:992:  fontSize=
+src/workspace.jsx:992:  fontWeight=
+src/workspace.jsx:992:  fontFamily=
+src/workspace.jsx:994:  y=
+src/workspace.jsx:994:  width=
+src/workspace.jsx:994:  height=
+src/workspace.jsx:994:  rx=
+src/workspace.jsx:994:  fill=
+src/workspace.jsx:995: M208 99h28
+src/workspace.jsx:995:  strokeLinecap=
+src/workspace.jsx:1005: Periodic test
+src/workspace.jsx:1036: ), err.message, 
+src/workspace.jsx:1046: ), err.message, 
+src/workspace.jsx:1063: ), err.message, 
+src/workspace.jsx:1083: POST
+src/workspace.jsx:1085: )) ? t(
+src/workspace.jsx:1085: ) : t(
+src/workspace.jsx:1085: ), line, line.startsWith(t(
+src/workspace.jsx:1087: ), err instanceof Error ? err.message : t(
+src/workspace.jsx:1095: ), t(
+src/workspace.jsx:1097: ), t(
+src/workspace.jsx:1098: ), t(
+src/workspace.jsx:1099: ), t(
+src/workspace.jsx:1108: ) : t(
+src/workspace.jsx:1108: ), editingId ? `${title} is now over ${over}.` : t(
+src/workspace.jsx:1134: Subject
+src/workspace.jsx:1135: Assessment
+src/workspace.jsx:1141: ).localeCompare(a.day || 
+src/workspace.jsx:1148: ), t(
+src/workspace.jsx:1154: ), t(
+src/workspace.jsx:1158: ), t(
+src/workspace.jsx:1162: ), t(
+src/workspace.jsx:1171: ), t(
+src/workspace.jsx:1173: ), err.message, 
+src/workspace.jsx:1178: sections assess
+src/workspace.jsx:1180: panel form-grid assess-create no-print
+src/workspace.jsx:1185: Edit assessment
+src/workspace.jsx:1185: New assessment
+src/workspace.jsx:1189: Title
+src/workspace.jsx:1190: Over
+src/workspace.jsx:1191: Assessment date
+src/workspace.jsx:1199: >{t(
+src/workspace.jsx:1204: Save changes
+src/workspace.jsx:1204: Create assessment
+src/workspace.jsx:1208: assess-board no-print
+src/workspace.jsx:1210:  on
+src/workspace.jsx:1219: Subject
+src/workspace.jsx:1220: Class
+src/workspace.jsx:1224: Selected
+src/workspace.jsx:1241: roster assess-sheet no-print
+src/workspace.jsx:1246: Subject
+src/workspace.jsx:1246: Class
+src/workspace.jsx:1251: board roster-table
+src/workspace.jsx:1253: )}</th><th>{t(
+src/workspace.jsx:1253: )}</th><th>{t(
+src/workspace.jsx:1253: )}</th><th>{t(
+src/workspace.jsx:1253: )}</th><th>{t(
+src/workspace.jsx:1258: No.
+src/workspace.jsx:1259: Student
+src/workspace.jsx:1260: Parent phone
+src/workspace.jsx:1260: No phone
+src/workspace.jsx:1261: Marks
+src/workspace.jsx:1261: )} inputMode=
+src/workspace.jsx:1261:  value={marks[student._id] || 
+src/workspace.jsx:1262: Comment
+src/workspace.jsx:1262: )} value={comments[student._id] || 
+src/workspace.jsx:1267: actions assess-save
+src/workspace.jsx:1268: POST
+src/workspace.jsx:1268: Sheet saved
+src/workspace.jsx:1268: Marks and comments are stored. You can notify parents now.
+src/workspace.jsx:1288: >{t(
+src/workspace.jsx:1294: report-filters no-print
+src/workspace.jsx:1295: Academic year
+src/workspace.jsx:1298: >{t(
+src/workspace.jsx:1299: >{t(
+src/workspace.jsx:1300: >{t(
+src/workspace.jsx:1306: roster report-sheet
+src/workspace.jsx:1312: School
+src/workspace.jsx:1312: All classes
+src/workspace.jsx:1313: 1 mark
+src/workspace.jsx:1315: solid no-print
+src/workspace.jsx:1317: ), t(
+src/workspace.jsx:1323: )}</p> : reportRows.length === 0 ? <p className=
+src/workspace.jsx:1323: >{t(
+src/workspace.jsx:1324: board roster-table report-table premium-table
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1326: )}</th><th>{t(
+src/workspace.jsx:1331: No.
+src/workspace.jsx:1332: Date
+src/workspace.jsx:1333: Student
+src/workspace.jsx:1334: Subject
+src/workspace.jsx:1335: Assessment
+src/workspace.jsx:1336: Score
+src/workspace.jsx:1337: Comment
+src/workspace.jsx:1350: Normal
+src/workspace.jsx:1350: Medium
+src/workspace.jsx:1350: Abnormal
+src/workspace.jsx:1367: Term 1
+src/workspace.jsx:1367: , normalFrom: 
+src/workspace.jsx:1367: , mediumFrom: 
+src/workspace.jsx:1367: , abnormalFrom: 
+src/workspace.jsx:1374: Term 1
+src/workspace.jsx:1403: ), err.message, 
+src/workspace.jsx:1406: ), err.message, 
+src/workspace.jsx:1410: ), err.message, 
+src/workspace.jsx:1435: , classId: student.classRoom?._id || 
+src/workspace.jsx:1445: ).localeCompare(b.student?.fullName || 
+src/workspace.jsx:1457: ).localeCompare(b.student?.fullName || 
+src/workspace.jsx:1468: Student
+src/workspace.jsx:1481: ), t(
+src/workspace.jsx:1487: ), t(
+src/workspace.jsx:1491: ), t(
+src/workspace.jsx:1513: ), t(
+src/workspace.jsx:1515: ), err.message, 
+src/workspace.jsx:1521: panel form-grid no-print
+src/workspace.jsx:1527: ), t(
+src/workspace.jsx:1529: Set the term marks
+src/workspace.jsx:1530: Academic year
+src/workspace.jsx:1531: Term
+src/workspace.jsx:1532: Maximum marks
+src/workspace.jsx:1533: Normal from
+src/workspace.jsx:1534: Medium from
+src/workspace.jsx:1535: Abnormal from
+src/workspace.jsx:1536: muted span
+src/workspace.jsx:1539: panel no-print
+src/workspace.jsx:1542: Find a student
+src/workspace.jsx:1553: } onClick={() => { setClassId(room._id); setStudentId(
+src/workspace.jsx:1553: ); setFinder(
+src/workspace.jsx:1565: split no-print
+src/workspace.jsx:1570:  on
+src/workspace.jsx:1570: }`} type=
+src/workspace.jsx:1578: panel sections
+src/workspace.jsx:1585: ) : t(
+src/workspace.jsx:1585: ), data.message || `${selected.fullName} was updated.`, data.notified ? 
+src/workspace.jsx:1591: } {item.scoreAfter != null ? `· ${item.scoreAfter} left` : 
+src/workspace.jsx:1592: Case title
+src/workspace.jsx:1593: What happened
+src/workspace.jsx:1594: Marks to subtract
+src/workspace.jsx:1615: >{t(
+src/workspace.jsx:1621: report-filters no-print
+src/workspace.jsx:1622: Academic year
+src/workspace.jsx:1623: Term
+src/workspace.jsx:1626: roster report-sheet
+src/workspace.jsx:1632: School
+src/workspace.jsx:1632: All classes
+src/workspace.jsx:1633: 1 student
+src/workspace.jsx:1633: 1 case
+src/workspace.jsx:1633: 1 mark
+src/workspace.jsx:1635: solid no-print
+src/workspace.jsx:1637: ), t(
+src/workspace.jsx:1643: )}</p> : groupedCases.length === 0 ? <p className=
+src/workspace.jsx:1643: >{t(
+src/workspace.jsx:1649:  : `${group.remaining} remaining`].filter(Boolean).join(
+src/workspace.jsx:1656: } · {item.parentNotifiedAt ? 
+src/workspace.jsx:1656: Parent not notified
+src/workspace.jsx:1672: , type: 
+src/workspace.jsx:1672: , motto: 
+src/workspace.jsx:1672: , tagline: 
+src/workspace.jsx:1672: , about: 
+src/workspace.jsx:1672: , history: 
+src/workspace.jsx:1672: , vision: 
+src/workspace.jsx:1672: , mission: 
+src/workspace.jsx:1672: , performanceSummary: 
+src/workspace.jsx:1672: , programs: 
+src/workspace.jsx:1672: , facilities: 
+src/workspace.jsx:1672: , email: 
+src/workspace.jsx:1672: , phone: 
+src/workspace.jsx:1672: , whatsapp: 
+src/workspace.jsx:1672: , visitingHours: 
+src/workspace.jsx:1672: , province: 
+src/workspace.jsx:1672: , district: 
+src/workspace.jsx:1672: , sector: 
+src/workspace.jsx:1672: , address: 
+src/workspace.jsx:1672: , establishedYear: 
+src/workspace.jsx:1672: , studentCount: 
+src/workspace.jsx:1672: , teacherCount: 
+src/workspace.jsx:1672: , logoUrl: 
+src/workspace.jsx:1672: , coverUrl: 
+src/workspace.jsx:1699: , type: school.type || 
+src/workspace.jsx:1699: , motto: school.motto || 
+src/workspace.jsx:1699: , tagline: school.tagline || 
+src/workspace.jsx:1699: , about: school.about || 
+src/workspace.jsx:1699: , history: school.history || 
+src/workspace.jsx:1699: , vision: school.vision || 
+src/workspace.jsx:1699: , mission: school.mission || 
+src/workspace.jsx:1699: , performanceSummary: school.performanceSummary || 
+src/workspace.jsx:1700: , facilities: school.facilities?.join(
+src/workspace.jsx:1700: , email: school.email || 
+src/workspace.jsx:1700: , phone: school.phone || 
+src/workspace.jsx:1700: , whatsapp: school.whatsapp || 
+src/workspace.jsx:1700: , visitingHours: school.visitingHours || 
+src/workspace.jsx:1701: , district: school.location?.district || 
+src/workspace.jsx:1701: , sector: school.location?.sector || 
+src/workspace.jsx:1701: , address: school.location?.address || 
+src/workspace.jsx:1702: , studentCount: school.studentCount ? String(school.studentCount) : 
+src/workspace.jsx:1702: , teacherCount: school.teacherCount ? String(school.teacherCount) : 
+src/workspace.jsx:1702: , logoUrl: school.logoUrl || 
+src/workspace.jsx:1702: , coverUrl: school.coverUrl || 
+src/workspace.jsx:1722: ), err.message, 
+src/workspace.jsx:1728: Uploaded
+src/workspace.jsx:1734: School name
+src/workspace.jsx:1738: Motto
+src/workspace.jsx:1739: Tagline
+src/workspace.jsx:1740: About
+src/workspace.jsx:1741: Performance summary
+src/workspace.jsx:1742: Students
+src/workspace.jsx:1743: Teachers
+src/workspace.jsx:1744: Founded
+src/workspace.jsx:1745: History
+src/workspace.jsx:1746: Vision
+src/workspace.jsx:1747: Mission
+src/workspace.jsx:1748: Programs
+src/workspace.jsx:1748: , value)} placeholder={t(
+src/workspace.jsx:1749: Facilities
+src/workspace.jsx:1749: , value)} placeholder={t(
+src/workspace.jsx:1750: Province
+src/workspace.jsx:1751: District
+src/workspace.jsx:1752: Sector
+src/workspace.jsx:1753: Address
+src/workspace.jsx:1754: Email
+src/workspace.jsx:1755: Phone
+src/workspace.jsx:1755: , value)} placeholder=
+src/workspace.jsx:1756: WhatsApp
+src/workspace.jsx:1756: , value)} placeholder=
+src/workspace.jsx:1757: Visiting hours
+src/workspace.jsx:1763: panel sections
+src/workspace.jsx:1764: ) : t(
+src/workspace.jsx:1765:  style={{ height: 180, width: 
+src/workspace.jsx:1765: , objectFit: 
+src/workspace.jsx:1767: )}<input hidden type=
+src/workspace.jsx:1767:  accept=
+src/workspace.jsx:1767:  onChange={(event) => onFile(
+src/workspace.jsx:1767: coverUrl
+src/workspace.jsx:1768: )}<input hidden type=
+src/workspace.jsx:1768:  accept=
+src/workspace.jsx:1768:  onChange={(event) => onFile(
+src/workspace.jsx:1768: logoUrl
+src/workspace.jsx:1773: POST
+src/workspace.jsx:1778: Submitted
+src/workspace.jsx:1778: Saved
+src/workspace.jsx:1778: IshuriApp will review this school.
+src/workspace.jsx:1778: The school website now shows these details.
+src/workspace.jsx:1778: Submit for approval
+src/workspace.jsx:1778: Save website profile
+src/workspace.jsx:1782: )}</h2>{staff.map((member) => <p key={member._id}><strong>{member.fullName}</strong> · {member.roleTitle} · {member.visibility === 
+src/workspace.jsx:1782: Visible
+src/workspace.jsx:1782: Hidden until approved
+src/workspace.jsx:1783: panel form-grid
+src/workspace.jsx:1785: ), t(
+src/workspace.jsx:1786: POST
+src/workspace.jsx:1789: ), t(
+src/workspace.jsx:1789: )).then((ok) => { if (ok) { setEventTitle(
+src/workspace.jsx:1789: ); setEventVenue(
+src/workspace.jsx:1792: Event title
+src/workspace.jsx:1793: Venue
+src/workspace.jsx:1795: Campus
+src/workspace.jsx:1797: panel sections
+src/workspace.jsx:1799: Caption
+src/workspace.jsx:1800: )}<input hidden type=
+src/workspace.jsx:1800:  accept=
+src/workspace.jsx:1810: ), t(
+src/workspace.jsx:1819: Photo removed
+src/workspace.jsx:1819: It is no longer on the school gallery.
+src/workspace.jsx:1836: Campus
+src/workspace.jsx:1843: ), err.message, 
+src/workspace.jsx:1847: ) : t(
+src/workspace.jsx:1848: panel form-grid
+src/workspace.jsx:1850: POST
+src/workspace.jsx:1850: ), title || t(
+src/workspace.jsx:1850: )).then((ok) => { if (ok) { setTitle(
+src/workspace.jsx:1850: ); setBody(
+src/workspace.jsx:1852: Title
+src/workspace.jsx:1856: Details
+src/workspace.jsx:1857: Venue
+src/workspace.jsx:1858: Date
+src/workspace.jsx:1861: )}<input hidden type=
+src/workspace.jsx:1861:  accept=
+src/workspace.jsx:1866: POST
+src/workspace.jsx:1866: Campus
+src/workspace.jsx:1866: Campus
+src/workspace.jsx:1866: ), t(
+src/workspace.jsx:1868: ).replaceAll(
+src/workspace.jsx:1878: panel assess-create
+src/workspace.jsx:1891: panel form-grid assess-create
+src/workspace.jsx:1900: ), sent.message || t(
+src/workspace.jsx:1903: ), err instanceof Error ? err.message : t(
+src/workspace.jsx:1910: School
+src/workspace.jsx:1916: muted span
+src/workspace.jsx:1917: Phones, separated by commas
+src/workspace.jsx:1918: Message
+src/workspace.jsx:1920: muted span
+src/workspace.jsx:1926: , { timeZone: 
+src/workspace.jsx:1926: , year: 
+src/workspace.jsx:1926: , month: 
+src/workspace.jsx:1926: , day: 
+src/workspace.jsx:1965: Marks
+src/workspace.jsx:1966: Term results
+src/workspace.jsx:1967: Discipline
+src/workspace.jsx:1968: School notice
+src/workspace.jsx:2012:  className=
+src/workspace.jsx:2012:  role=
+src/workspace.jsx:2012:  aria-label={t(
+src/workspace.jsx:2013:  cy=
+src/workspace.jsx:2013:  r={radius} className=
+src/workspace.jsx:2014: rotate(-90 80 80)
+src/workspace.jsx:2018:  cy=
+src/workspace.jsx:2018:  r={radius} fill=
+src/workspace.jsx:2018:  stroke={slice.color} strokeWidth=
+src/workspace.jsx:2026:  y=
+src/workspace.jsx:2026:  textAnchor=
+src/workspace.jsx:2026:  className=
+src/workspace.jsx:2027:  y=
+src/workspace.jsx:2027:  textAnchor=
+src/workspace.jsx:2027:  className=
+src/workspace.jsx:2027: >{t(
+src/workspace.jsx:2063: Messages
+src/workspace.jsx:2064: studentsJoined
+src/workspace.jsx:2064: New students
+src/workspace.jsx:2065: teachersJoined
+src/workspace.jsx:2065: New teachers
+src/workspace.jsx:2066: Students now
+src/workspace.jsx:2067: Teachers now
+src/workspace.jsx:2068: Discipline now
+src/workspace.jsx:2069: Parent phone
+src/workspace.jsx:2084: overview-crest analysis-crest
+src/workspace.jsx:2084:  role=
+src/workspace.jsx:2084:  aria-label={t(
+src/workspace.jsx:2085:  y=
+src/workspace.jsx:2085:  width=
+src/workspace.jsx:2085:  height=
+src/workspace.jsx:2085:  rx=
+src/workspace.jsx:2085:  fill=
+src/workspace.jsx:2086:  y=
+src/workspace.jsx:2086:  width=
+src/workspace.jsx:2086:  height=
+src/workspace.jsx:2086:  rx=
+src/workspace.jsx:2086:  fill=
+src/workspace.jsx:2087: M22 52h72
+src/workspace.jsx:2088:  y=
+src/workspace.jsx:2088:  width=
+src/workspace.jsx:2088:  height=
+src/workspace.jsx:2088:  rx=
+src/workspace.jsx:2088:  fill=
+src/workspace.jsx:2089:  y=
+src/workspace.jsx:2089:  width=
+src/workspace.jsx:2089:  height=
+src/workspace.jsx:2089:  rx=
+src/workspace.jsx:2089:  fill=
+src/workspace.jsx:2090:  y=
+src/workspace.jsx:2090:  width=
+src/workspace.jsx:2090:  height=
+src/workspace.jsx:2090:  rx=
+src/workspace.jsx:2090:  fill=
+src/workspace.jsx:2091:  y=
+src/workspace.jsx:2091:  width=
+src/workspace.jsx:2091:  height=
+src/workspace.jsx:2091:  rx=
+src/workspace.jsx:2091:  fill=
+src/workspace.jsx:2093:  y=
+src/workspace.jsx:2093:  width=
+src/workspace.jsx:2093:  height=
+src/workspace.jsx:2093:  rx=
+src/workspace.jsx:2093:  fill=
+src/workspace.jsx:2094:  y=
+src/workspace.jsx:2094:  width=
+src/workspace.jsx:2094:  height=
+src/workspace.jsx:2094:  rx=
+src/workspace.jsx:2094:  fill=
+src/workspace.jsx:2095:  y=
+src/workspace.jsx:2095:  width=
+src/workspace.jsx:2095:  height=
+src/workspace.jsx:2095:  rx=
+src/workspace.jsx:2095:  fill=
+src/workspace.jsx:2096:  y=
+src/workspace.jsx:2096:  width=
+src/workspace.jsx:2096:  height=
+src/workspace.jsx:2096:  rx=
+src/workspace.jsx:2096:  fill=
+src/workspace.jsx:2111: ), err.message, 
+src/workspace.jsx:2122: sections school-analysis
+src/workspace.jsx:2125: assess-mark skel
+src/workspace.jsx:2126: skel short
+src/workspace.jsx:2127: skel skel-graphic
+src/workspace.jsx:2130: panel skel-rows
+src/workspace.jsx:2132: skel short
+src/workspace.jsx:2136: kpi skel-card
+src/workspace.jsx:2136: skel skel-avatar
+src/workspace.jsx:2136: skel short
+src/workspace.jsx:2139: skel skel-stage
+src/workspace.jsx:2140: skel skel-stage
+src/workspace.jsx:2146: sections school-analysis
+src/workspace.jsx:2156: en-GB
+src/workspace.jsx:2156: Africa/Kigali
+src/workspace.jsx:2156: en-GB
+src/workspace.jsx:2156: Africa/Kigali
+src/workspace.jsx:2156: Weekly, monthly and annual figures.
+src/workspace.jsx:2158: panel sections
+src/workspace.jsx:2164: Search school
+src/workspace.jsx:2166: } onClick={() => setStatus(item)}>{item === 
+src/workspace.jsx:2166:  ? t(
+src/workspace.jsx:2166: ) : item.replaceAll(
+src/workspace.jsx:2168: } onClick={() => setType(item)}>{item === 
+src/workspace.jsx:2168:  ? t(
+src/workspace.jsx:2170: panel sections
+src/workspace.jsx:2174: kpi msg-kpi
+src/workspace.jsx:2184: chart-card pulse-card
+src/workspace.jsx:2195: chart-card pulse-card
+src/workspace.jsx:2206: chart-card pulse-card
+src/workspace.jsx:2219: panel sections
+src/workspace.jsx:2230: panel sections
+src/workspace.jsx:2239: panel sections
+src/workspace.jsx:2248: panel analysis-school
+src/workspace.jsx:2270: , email: 
+src/workspace.jsx:2270: , password: 
+src/workspace.jsx:2270: , phone: 
+src/workspace.jsx:2275: ), err.message, 
+src/workspace.jsx:2278: panel form-grid
+src/workspace.jsx:2280: POST
+src/workspace.jsx:2280: ), t(
+src/workspace.jsx:2280: )).then((ok) => { if (ok) setDirector({ ...director, fullName: 
+src/workspace.jsx:2280: , email: 
+src/workspace.jsx:2280: , phone: 
+src/workspace.jsx:2283: Full name
+src/workspace.jsx:2284: Email
+src/workspace.jsx:2285: Phone
+src/workspace.jsx:2286: Password
+src/workspace.jsx:2291: panel sections
+src/workspace.jsx:2293: )} · {school.type} · {school.location?.district || 
+src/workspace.jsx:2295: POST
+src/workspace.jsx:2295: Approved
+src/workspace.jsx:2296: POST
+src/workspace.jsx:2296: ) } }).then(load), 
+src/workspace.jsx:2296: , `${school.name} was not approved.`)}>{t(
+src/workspace.jsx:2297: POST
+src/workspace.jsx:2297: Deactivated
+src/workspace.jsx:2298: POST
+src/workspace.jsx:2298: Active
+src/workspace.jsx:2299: DELETE
+src/workspace.jsx:2299: Deleted
+src/workspace.jsx:2311: , body: 
+src/workspace.jsx:2311: , category: 
+src/workspace.jsx:2311: , imageUrl: 
+src/workspace.jsx:2311: , videoUrl: 
+src/workspace.jsx:2311: , ctaLabel: 
+src/workspace.jsx:2311: , ctaUrl: 
+src/workspace.jsx:2320: ), err.message, 
+src/workspace.jsx:2324: Uploaded
+src/workspace.jsx:2331: sections ad-desk
+src/workspace.jsx:2332: panel form-grid assess-create
+src/workspace.jsx:2334: ), t(
+src/workspace.jsx:2341: ) : t(
+src/workspace.jsx:2341: ), t(
+src/workspace.jsx:2347: Edit ad
+src/workspace.jsx:2347: Publish home ad
+src/workspace.jsx:2350: Title
+src/workspace.jsx:2354: Body
+src/workspace.jsx:2357:  style={{ height: 180, width: 
+src/workspace.jsx:2357: , objectFit: 
+src/workspace.jsx:2361: actions span
+src/workspace.jsx:2362: )}<input hidden type=
+src/workspace.jsx:2362:  accept=
+src/workspace.jsx:2362:  onChange={(event) => onFile(
+src/workspace.jsx:2363: )}<input hidden type=
+src/workspace.jsx:2363:  accept=
+src/workspace.jsx:2363:  onChange={(event) => onFile(
+src/workspace.jsx:2365: Or paste a video URL
+src/workspace.jsx:2366: Image URL
+src/workspace.jsx:2367: Button label
+src/workspace.jsx:2368: Button link
+src/workspace.jsx:2370: ) : t(
+src/workspace.jsx:2376: panel ad-manage
+src/workspace.jsx:2378:  /> : ad.videoUrl ? <video src={ad.videoUrl} muted /> : <div className=
+src/workspace.jsx:2378:  aria-hidden=
+src/workspace.jsx:2378: ><Icon name=
+src/workspace.jsx:2385: , body: ad.body || 
+src/workspace.jsx:2385: , category: ad.category || 
+src/workspace.jsx:2385: , imageUrl: ad.imageUrl || 
+src/workspace.jsx:2385: , videoUrl: ad.videoUrl || 
+src/workspace.jsx:2385: , ctaLabel: ad.ctaLabel || t(
+src/workspace.jsx:2385: ), ctaUrl: ad.ctaUrl || 
+src/workspace.jsx:2385:  }); }}>{t(
+src/workspace.jsx:2386: PATCH
+src/workspace.jsx:2386: Ad activated
+src/workspace.jsx:2386: Ad suspended
+src/workspace.jsx:2386: Activate
+src/workspace.jsx:2386: Suspend
+src/workspace.jsx:2387: DELETE
+src/workspace.jsx:2387: ), ad.title); }}>{t(
+src/liveChat.jsx:34: chat-avatar chat-avatar-empty
+src/liveChat.jsx:36:  is-ready
+src/liveChat.jsx:56: School
+src/liveChat.jsx:171: Messages
+src/liveChat.jsx:196: You're caught up
+src/liveChat.jsx:203: You: 
+src/liveChat.jsx:237: Sent
+src/liveChat.jsx:275: Messages
+src/liveChat.jsx:306: Messages
+src/liveChat.jsx:326: POST
+src/liveChat.jsx:354: ), err.message, 
+src/liveChat.jsx:392: ), err.message, 
+src/liveChat.jsx:410: , { kind: 
+src/liveChat.jsx:420: ), err.message, 
+src/liveChat.jsx:436: ), err.message, 
+src/liveChat.jsx:443: Copied
+src/liveChat.jsx:445: ), t(
+src/liveChat.jsx:455:  chat-open
+src/liveChat.jsx:471: Seen
+src/liveChat.jsx:471: Sent
+src/liveChat.jsx:490: skel skel-avatar
+src/liveChat.jsx:491: skel short
+src/liveChat.jsx:503: )}>{t(
+src/liveChat.jsx:507: typing…
+src/liveChat.jsx:521:  mine
+src/liveChat.jsx:533:  like
+src/liveChat.jsx:533: }${item.unsent ? 
+src/liveChat.jsx:533: }${open ? 
+src/liveChat.jsx:550: You
+src/liveChat.jsx:579: ); }}>{t(
+src/liveChat.jsx:582: ); setReply(null); setMenuId(null); setConfirmUnsend(
+src/liveChat.jsx:582: ); }}>{t(
+src/liveChat.jsx:586: Delete
+src/liveChat.jsx:597: )} onClick={() => { setEditing(null); setDraft(
+src/liveChat.jsx:597: ); }}>{t(
+src/liveChat.jsx:606: )} onClick={() => setReply(null)}>{t(
+src/liveChat.jsx:624: Save
+src/liveChat.jsx:624: Send
+src/liveChat.jsx:633: skel skel-avatar
+src/liveChat.jsx:635: skel short
+src/messageAnalytics.jsx:6: January
+src/messageAnalytics.jsx:6: February
+src/messageAnalytics.jsx:6: March
+src/messageAnalytics.jsx:6: April
+src/messageAnalytics.jsx:6: May
+src/messageAnalytics.jsx:6: June
+src/messageAnalytics.jsx:6: July
+src/messageAnalytics.jsx:6: August
+src/messageAnalytics.jsx:6: September
+src/messageAnalytics.jsx:6: October
+src/messageAnalytics.jsx:6: November
+src/messageAnalytics.jsx:6: December
+src/messageAnalytics.jsx:29: , { timeZone: 
+src/messageAnalytics.jsx:29: , year: 
+src/messageAnalytics.jsx:29: , month: 
+src/messageAnalytics.jsx:49: conic-gradient(#e6ebf1 0deg 360deg)
+src/messageAnalytics.jsx:51: pie pie-donut
+src/messageAnalytics.jsx:89: L
+src/messageAnalytics.jsx:89: M
+src/messageAnalytics.jsx:93: rgba(79,195,247,0.55)
+src/messageAnalytics.jsx:93: rgba(21,101,192,0.28)
+src/messageAnalytics.jsx:98:  strokeLinejoin=
+src/messageAnalytics.jsx:98:  strokeLinecap=
+src/messageAnalytics.jsx:100:  fill=
+src/messageAnalytics.jsx:100:  stroke=
+src/messageAnalytics.jsx:100:  strokeWidth=
+src/messageAnalytics.jsx:102:  textAnchor=
+src/messageAnalytics.jsx:102:  className=
+src/messageAnalytics.jsx:114: L
+src/messageAnalytics.jsx:114: M
+src/messageAnalytics.jsx:118:  strokeLinejoin=
+src/messageAnalytics.jsx:118:  strokeLinecap=
+src/messageAnalytics.jsx:122:  textAnchor=
+src/messageAnalytics.jsx:122:  className=
+src/messageAnalytics.jsx:145:  role=
+src/messageAnalytics.jsx:146:  strokeLinecap=
+src/messageAnalytics.jsx:147:  strokeLinecap=
+src/messageAnalytics.jsx:156: , label: 
+src/messageAnalytics.jsx:185: columns scroll-columns
+src/messageAnalytics.jsx:204: muted hint-line
+src/messageAnalytics.jsx:228:  role=
+src/messageAnalytics.jsx:228:  aria-label={t(
+src/messageAnalytics.jsx:229:  y=
+src/messageAnalytics.jsx:229:  width=
+src/messageAnalytics.jsx:229:  height=
+src/messageAnalytics.jsx:229:  rx=
+src/messageAnalytics.jsx:229:  fill=
+src/messageAnalytics.jsx:230:  y=
+src/messageAnalytics.jsx:230:  width=
+src/messageAnalytics.jsx:230:  height=
+src/messageAnalytics.jsx:230:  rx=
+src/messageAnalytics.jsx:230:  fill=
+src/messageAnalytics.jsx:231: M44 56h78M44 74h62M44 92h48
+src/messageAnalytics.jsx:231:  strokeLinecap=
+src/messageAnalytics.jsx:233:  y=
+src/messageAnalytics.jsx:233:  width=
+src/messageAnalytics.jsx:233:  height=
+src/messageAnalytics.jsx:233:  rx=
+src/messageAnalytics.jsx:233:  fill=
+src/messageAnalytics.jsx:234:  y=
+src/messageAnalytics.jsx:234:  width=
+src/messageAnalytics.jsx:234:  height=
+src/messageAnalytics.jsx:234:  rx=
+src/messageAnalytics.jsx:234:  fill=
+src/messageAnalytics.jsx:235:  y=
+src/messageAnalytics.jsx:235:  textAnchor=
+src/messageAnalytics.jsx:235:  fill=
+src/messageAnalytics.jsx:235:  fontSize=
+src/messageAnalytics.jsx:235:  fontWeight=
+src/messageAnalytics.jsx:235:  fontFamily=
+src/messageAnalytics.jsx:235: >{t(
+src/messageAnalytics.jsx:236:  y=
+src/messageAnalytics.jsx:236:  textAnchor=
+src/messageAnalytics.jsx:236:  fill=
+src/messageAnalytics.jsx:236:  fontSize=
+src/messageAnalytics.jsx:236:  fontFamily=
+src/messageAnalytics.jsx:236: >{t(
+src/messageAnalytics.jsx:237:  cy=
+src/messageAnalytics.jsx:237:  r=
+src/messageAnalytics.jsx:237:  fill=
+src/messageAnalytics.jsx:279: Month
+src/messageAnalytics.jsx:284: panel dash-intro msg-intro
+src/messageAnalytics.jsx:289: Your messages
+src/messageAnalytics.jsx:289: School messages
+src/messageAnalytics.jsx:295: These are the messages you sent. A director sees the whole school.
+src/messageAnalytics.jsx:347: warn hint-line
+src/messageAnalytics.jsx:352: kpi skel-card
+src/messageAnalytics.jsx:353: skel skel-avatar
+src/messageAnalytics.jsx:354: skel short
+src/messageAnalytics.jsx:359: skel skel-stage
+src/messageAnalytics.jsx:367: kpi msg-kpi
+src/messageAnalytics.jsx:374: kpi msg-kpi
+src/messageAnalytics.jsx:381: kpi msg-kpi
+src/messageAnalytics.jsx:388: kpi msg-kpi
+src/messageAnalytics.jsx:414: studio-card studio-bars
+src/messageAnalytics.jsx:425: muted hint-line
+src/messageAnalytics.jsx:436: pie-wrap pie-stack
+src/messageAnalytics.jsx:437: Paid and unpaid pie
+src/messageAnalytics.jsx:446: pie-wrap pie-stack
+src/messageAnalytics.jsx:447: Category pie
+src/messageAnalytics.jsx:475: muted hint-line
+src/messageWallet.jsx:9: , { timeZone: 
+src/messageWallet.jsx:9: , year: 
+src/messageWallet.jsx:9: , month: 
+src/messageWallet.jsx:9: , day: 
+src/messageWallet.jsx:13: en-RW
+src/messageWallet.jsx:18: , { day: 
+src/messageWallet.jsx:18: , month: 
+src/messageWallet.jsx:18: , year: 
+src/messageWallet.jsx:63: ), err.message, 
+src/messageWallet.jsx:92: panel form-grid no-print wallet-form
+src/messageWallet.jsx:94: ), t(
+src/messageWallet.jsx:95:  || Number(amount) < 0) return notify(
+src/messageWallet.jsx:95: , t(
+src/messageWallet.jsx:96: Date
+src/messageWallet.jsx:97: Messages
+src/messageWallet.jsx:101: PATCH
+src/messageWallet.jsx:105: ) : t(
+src/messageWallet.jsx:105: ), saved.message || t(
+src/messageWallet.jsx:108: kicker span
+src/messageWallet.jsx:109: Correct this payment
+src/messageWallet.jsx:109: Record a school payment
+src/messageWallet.jsx:110: muted span
+src/messageWallet.jsx:117:  value={amount} placeholder=
+src/messageWallet.jsx:123:  step=
+src/messageWallet.jsx:123:  value={messages} placeholder=
+src/messageWallet.jsx:125: field span
+src/messageWallet.jsx:129: ) : t(
+src/messageWallet.jsx:135:  step=
+src/messageWallet.jsx:137: actions span
+src/messageWallet.jsx:138: ) : t(
+src/messageWallet.jsx:141: ), t(
+src/messageWallet.jsx:142: ), t(
+src/messageWallet.jsx:146: ), saved.message || t(
+src/messageWallet.jsx:152: panel no-print
+src/messageWallet.jsx:158: ghost no-print
+src/messageWallet.jsx:160: No limit yet
+src/messageWallet.jsx:167: panel no-print
+src/messageWallet.jsx:170: board pay-list
+src/messageWallet.jsx:184: School
+src/messageWallet.jsx:184: School
+src/messageWallet.jsx:185: Date
+src/messageWallet.jsx:186: Amount
+src/messageWallet.jsx:187: Messages
+src/messageWallet.jsx:188: Left after
+src/messageWallet.jsx:189: Actions
+src/earningsDashboard.jsx:24: Daily
+src/earningsDashboard.jsx:25: Weekly
+src/earningsDashboard.jsx:26: Monthly
+src/earningsDashboard.jsx:27: Quarterly
+src/earningsDashboard.jsx:28: Yearly
+src/earningsDashboard.jsx:36: en-RW
+src/earningsDashboard.jsx:46: , { timeZone: 
+src/earningsDashboard.jsx:46: , year: 
+src/earningsDashboard.jsx:46: , month: 
+src/earningsDashboard.jsx:46: , day: 
+src/earningsDashboard.jsx:68:  height=
+src/earningsDashboard.jsx:83: Up
+src/earningsDashboard.jsx:83: Down
+src/earningsDashboard.jsx:105: , spentAt: todayInput(), note: 
+src/earningsDashboard.jsx:122: ), err.message, 
+src/earningsDashboard.jsx:130: No delivered messages
+src/earningsDashboard.jsx:138: earn-dash tw:grid tw:min-w-0 tw:max-w-full tw:gap-4
+src/earningsDashboard.jsx:160: Total revenue
+src/earningsDashboard.jsx:160: cumulativeRevenueRwf
+src/earningsDashboard.jsx:161: Successful messages
+src/earningsDashboard.jsx:162: Today's earnings
+src/earningsDashboard.jsx:162: revenueRwf
+src/earningsDashboard.jsx:163: Average daily earnings
+src/earningsDashboard.jsx:163: revenueRwf
+src/earningsDashboard.jsx:164: Total expenses
+src/earningsDashboard.jsx:164: expensesRwf
+src/earningsDashboard.jsx:165: Net profit
+src/earningsDashboard.jsx:165: netProfitRwf
+src/earningsDashboard.jsx:172:  height=
+src/earningsDashboard.jsx:175: earnFill
+src/earningsDashboard.jsx:175:  y1=
+src/earningsDashboard.jsx:175:  x2=
+src/earningsDashboard.jsx:175:  y2=
+src/earningsDashboard.jsx:176:  stopColor=
+src/earningsDashboard.jsx:177:  stopColor=
+src/earningsDashboard.jsx:181: preserveStartEnd
+src/earningsDashboard.jsx:184: Cumulative earnings
+src/earningsDashboard.jsx:184: cumulativeRevenueRwf
+src/earningsDashboard.jsx:184: url(#earnFill)
+src/earningsDashboard.jsx:192: Earnings by hour
+src/earningsDashboard.jsx:192: Daily earnings
+src/earningsDashboard.jsx:194:  height=
+src/earningsDashboard.jsx:197: preserveStartEnd
+src/earningsDashboard.jsx:200: Earnings
+src/earningsDashboard.jsx:200: revenueRwf
+src/earningsDashboard.jsx:208:  height=
+src/earningsDashboard.jsx:211: preserveStartEnd
+src/earningsDashboard.jsx:214: Messages
+src/earningsDashboard.jsx:226:  height=
+src/earningsDashboard.jsx:228: revenueRwf
+src/earningsDashboard.jsx:250:  || Number(cost.amountRwf) < 0) return notify(
+src/earningsDashboard.jsx:250: , t(
+src/earningsDashboard.jsx:251: Date
+src/earningsDashboard.jsx:254: , spentAt: cost.spentAt, note: 
+src/earningsDashboard.jsx:256: ), t(
+src/earningsDashboard.jsx:279: DELETE
+src/earningsDashboard.jsx:279: Cost removed
+src/earningsDashboard.jsx:279: It is no longer in this period.
+src/officialReport.jsx:9:  || key === 
+src/officialReport.jsx:9: ) return t(
+src/officialReport.jsx:10:  || key === 
+src/officialReport.jsx:10: ) return t(
+src/officialReport.jsx:11:  || key === 
+src/officialReport.jsx:11: ) return t(
+src/officialReport.jsx:13: Term
+src/officialReport.jsx:20: en-GB
+src/officialReport.jsx:20: Africa/Kigali
+src/officialReport.jsx:32: School
+src/officialReport.jsx:44: School
+src/officialReport.jsx:67: School
+src/officialReport.jsx:91: Official academic record
+src/officialReport.jsx:97: )}</span><strong>{item.totalMax ? `${item.totalScore} / ${item.totalMax}` : 
+src/officialReport.jsx:99: )}</span><strong>{item.grade?.letter || 
+src/officialReport.jsx:100: )}</span><strong>{item.position ? `${item.position} of ${item.classSize}` : 
+src/officialReport.jsx:119: No.
+src/officialReport.jsx:120: Subject
+src/officialReport.jsx:121: Assessment
+src/officialReport.jsx:122: Date
+src/officialReport.jsx:123: Score
+src/officialReport.jsx:124: Maximum
+src/officialReport.jsx:125: Grade
+src/officialReport.jsx:138: Class teacher
+src/officialReport.jsx:138: School administration
+src/officialReport.jsx:138: Parent / guardian
+src/officialReport.jsx:146: Official conduct record
+src/officialReport.jsx:172: No.
+src/officialReport.jsx:173: Date
+src/officialReport.jsx:174: Incident
+src/officialReport.jsx:179: Deducted
+src/officialReport.jsx:180: Remaining
+src/officialReport.jsx:181: Staff
+src/officialReport.jsx:189: Remarks may be written here before the report is signed.
+src/officialReport.jsx:191: Discipline officer
+src/officialReport.jsx:191: School administration
+src/officialReport.jsx:191: Parent / guardian
+src/officialReport.jsx:210: IshuriApp · Official report
+src/officialReport.jsx:210: Page 
+src/officialReport.jsx:210:  of 
+src/officialReport.jsx:211: doc-toolbar no-print
+src/officialReport.jsx:212: Student Discipline Report
+src/officialReport.jsx:212: Student Academic Performance Report
+src/officialReport.jsx:214: } onClick={() => onOrientation(
+src/officialReport.jsx:214: )}>{t(
+src/officialReport.jsx:215: } onClick={() => onOrientation(
+src/officialReport.jsx:215: )}>{t(
+src/officialReport.jsx:223: Official report
+src/officialReport.jsx:223: Student Discipline Report
+src/officialReport.jsx:223: Student Academic Performance Report

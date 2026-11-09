@@ -1,0 +1,6 @@
+@import "tailwindcss" prefix(tw) source(none);
+@source "./earningsDashboard.jsx";
+
+@media print {
+  .earn-dash { background: white !important; }
+}
