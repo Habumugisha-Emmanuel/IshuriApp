@@ -1,4 +1,4 @@
-const API = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
+const API = import.meta.env.VITE_API_URL || "https://ishuriapp.onrender.com/api";
 
 export async function api(path, { token, method = "GET", body, form } = {}) {
   const headers = { Accept: "application/json" };
@@ -28,5 +28,5 @@ export async function uploadFile(token, folder, file) {
 export function media(url) {
   if (!url) return "";
   if (url.startsWith("http")) return url;
-  return `http://localhost:4000${url}`;
+  return `https://ishuriapp.onrender.com${url}`;
 }
