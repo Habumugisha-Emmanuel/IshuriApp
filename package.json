@@ -1,0 +1,11 @@
+{
+  "name": "ishuri-app",
+  "private": true,
+  "scripts": {
+    "backend": "npm run dev --prefix backend",
+    "seed": "npm run seed --prefix backend",
+    "mobile": "npm start --prefix mobile",
+    "web": "npm run web --prefix mobile",
+    "pwa": "npm run dev --prefix pwa"
+  }
+}
