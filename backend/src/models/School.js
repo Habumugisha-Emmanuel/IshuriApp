@@ -75,9 +75,12 @@ const schoolSchema = new mongoose.Schema(
     rejectionReason: String,
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     followersCount: { type: Number, default: 0 },
+<<<<<<< HEAD
     ratingSum: { type: Number, default: 0, min: 0 },
     ratingCount: { type: Number, default: 0, min: 0 },
     likeCount: { type: Number, default: 0, min: 0 },
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     isFeatured: { type: Boolean, default: false },
     verified: { type: Boolean, default: false },
   },

@@ -29,4 +29,8 @@ export function media(url) {
   if (!url) return "";
   if (url.startsWith("http")) return url;
   return `https://ishuriapp.onrender.com${url}`;
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64

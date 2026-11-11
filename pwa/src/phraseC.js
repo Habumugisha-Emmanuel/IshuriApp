@@ -243,6 +243,7 @@ export const rowsC = [
 ["sponsor", "umufasha", "mfadhili", "sponsor"],
 ["ad", "itangazo", "tangazo", "annonce"],
 ["No district", "Nta karere", "Hakuna wilaya", "Aucun district"],
+<<<<<<< HEAD
 ["Visit site", "Sura urubuga", "Tembelea tovuti", "Visiter le site"],
 ["Listing", "Urutonde", "Orodha", "Fiche"],
 ["Rating", "Urutonde rw'amanota", "Nafasi", "Classement"],
@@ -344,4 +345,6 @@ export const rowsC = [
 ["Visit", "Sura", "Tembelea", "Visiter"],
 ["Developed by Emmanuel HABUMUGISHA, The CEO & Founder of EMMYLEX Ltd.", "Byakozwe na Emmanuel HABUMUGISHA, Umuyobozi mukuru n'uwashinze EMMYLEX Ltd.", "Imetengenezwa na Emmanuel HABUMUGISHA, Mkurugenzi Mkuu na Mwanzilishi wa EMMYLEX Ltd.", "Développé par Emmanuel HABUMUGISHA, PDG et fondateur d'EMMYLEX Ltd."],
 ["Visit https://www.ishuriapp.com/. Developed by Emmanuel HABUMUGISHA, The CEO & Founder of EMMYLEX Ltd.", "Sura https://www.ishuriapp.com/. Byakozwe na Emmanuel HABUMUGISHA, Umuyobozi mukuru n'uwashinze EMMYLEX Ltd.", "Tembelea https://www.ishuriapp.com/. Imetengenezwa na Emmanuel HABUMUGISHA, Mkurugenzi Mkuu na Mwanzilishi wa EMMYLEX Ltd.", "Visitez https://www.ishuriapp.com/. Développé par Emmanuel HABUMUGISHA, PDG et fondateur d'EMMYLEX Ltd."],
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 ];

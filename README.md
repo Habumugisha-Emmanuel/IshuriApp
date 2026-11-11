@@ -46,7 +46,19 @@ npx expo start
 
 Open with Expo Go, an emulator, or press `w` for web. The app talks to `http://<your-lan-ip>:4000/api` automatically when you scan the QR code, `http://10.0.2.2:4000/api` on Android emulator, and `http://localhost:4000/api` on web. Override with `EXPO_PUBLIC_API_URL` if needed.
 
+<<<<<<< HEAD
 
+=======
+## Demo accounts (after seed)
+
+| Role | Email | Password |
+|---|---|---|
+| Super admin | admin@ishuri.rw | IshuriAdmin@2026 |
+| School director | director@gsnyarugenge.rw | School@123 |
+| Mathematics teacher | maths@gsnyarugenge.rw | Teacher@123 |
+| Discipline | discipline@gsnyarugenge.rw | Discipline@123 |
+| University admin | admin@ur.ac.rw | University@123 |
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 
 Parents and students do not create accounts. They browse school profiles without signing in. Teachers still register student records (with parent phones) for SMS — that is school data, not an IshuriApp login.
 

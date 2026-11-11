@@ -9,9 +9,13 @@ const {
   GalleryItem,
   PlatformAd,
   ClassRoom,
+<<<<<<< HEAD
   SchoolReaction,
 } = require("../models");
 const ApiError = require("../utils/ApiError");
+=======
+} = require("../models");
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 
 const router = express.Router();
 
@@ -19,6 +23,7 @@ function publicSchoolFilter(extra = {}) {
   return { status: "approved", ...extra };
 }
 
+<<<<<<< HEAD
 function visitorKey(value) {
   const visitor = String(value || "").trim();
   return /^[a-zA-Z0-9-]{16,64}$/.test(visitor) ? visitor : "";
@@ -40,6 +45,8 @@ function presentSchool(school, mine) {
   return { ...school.toObject(), ...scoreOf(school, mine) };
 }
 
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 router.get(
   "/schools",
   asyncHandler(async (req, res) => {
@@ -52,16 +59,22 @@ router.get(
         { motto: new RegExp(q, "i") },
         { "location.district": new RegExp(q, "i") },
         { "location.province": new RegExp(q, "i") },
+<<<<<<< HEAD
         { "location.sector": new RegExp(q, "i") },
         { "location.address": new RegExp(q, "i") },
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         { programs: new RegExp(q, "i") },
       ];
     }
     if (req.query.type) filter.type = req.query.type;
     if (req.query.province) filter["location.province"] = req.query.province;
     if (req.query.district) filter["location.district"] = req.query.district;
+<<<<<<< HEAD
     if (req.query.sector) filter["location.sector"] = req.query.sector;
     if (req.query.address) filter["location.address"] = req.query.address;
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     if (req.query.featured === "true") filter.isFeatured = true;
 
     const sort =
@@ -75,6 +88,7 @@ router.get(
       School.find(filter).sort(sort).skip(skip).limit(limit).select("-reviewNotes -rejectionReason"),
       School.countDocuments(filter),
     ]);
+<<<<<<< HEAD
     const visitor = visitorKey(req.query.visitor);
     const mine = visitor
       ? await SchoolReaction.find({ visitor, school: { $in: items.map((school) => school._id) } })
@@ -85,6 +99,9 @@ router.get(
       items: items.map((school) => presentSchool(school, bySchool.get(String(school._id)))),
       meta: pageMeta(total, page, limit),
     });
+=======
+    res.json({ success: true, items, meta: pageMeta(total, page, limit) });
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   })
 );
 
@@ -123,11 +140,17 @@ router.get(
       return { ...member, managedClasses, teaching };
     });
 
+<<<<<<< HEAD
     const visitor = visitorKey(req.query.visitor);
     const mine = visitor ? await SchoolReaction.findOne({ school: school._id, visitor }) : null;
     res.json({
       success: true,
       school: presentSchool(school, mine),
+=======
+    res.json({
+      success: true,
+      school,
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       staff,
       events,
       announcements,
@@ -136,6 +159,7 @@ router.get(
   })
 );
 
+<<<<<<< HEAD
 router.post(
   "/schools/:idOrSlug/reaction",
   asyncHandler(async (req, res) => {
@@ -184,6 +208,8 @@ router.post(
   })
 );
 
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 router.get(
   "/rankings",
   asyncHandler(async (req, res) => {
@@ -239,6 +265,7 @@ router.post(
 );
 
 router.get(
+<<<<<<< HEAD
   "/gallery",
   asyncHandler(async (req, res) => {
     const schools = await School.find({ status: "approved" }).select("_id");
@@ -251,12 +278,19 @@ router.get(
 );
 
 router.get(
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   "/districts",
   asyncHandler(async (req, res) => {
     const districts = await School.aggregate([
       { $match: { status: "approved" } },
+<<<<<<< HEAD
       { $group: { _id: { province: "$location.province", district: "$location.district", sector: "$location.sector", address: "$location.address" }, count: { $sum: 1 } } },
       { $sort: { "_id.province": 1, "_id.district": 1, "_id.sector": 1, "_id.address": 1 } },
+=======
+      { $group: { _id: { province: "$location.province", district: "$location.district" }, count: { $sum: 1 } } },
+      { $sort: { "_id.province": 1, "_id.district": 1 } },
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     ]);
     res.json({ success: true, items: districts });
   })

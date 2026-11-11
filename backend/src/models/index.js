@@ -22,7 +22,10 @@ module.exports = {
   PlatformWallet: require("./PlatformWallet"),
   PlatformAd: require("./PlatformAd"),
   Follow: require("./Follow"),
+<<<<<<< HEAD
   SchoolReaction: require("./SchoolReaction"),
+=======
+>>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   ChatThread: require("./ChatThread"),
   ChatMessage: require("./ChatMessage"),
 };
