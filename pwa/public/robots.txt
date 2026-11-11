@@ -1,7 +1,5 @@
+
 User-agent: *
 Allow: /
-<<<<<<< HEAD
 
 Sitemap: https://www.ishuriapp.com/sitemap.xml
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64

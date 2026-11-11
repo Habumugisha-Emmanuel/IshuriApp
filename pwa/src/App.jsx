@@ -4,7 +4,6 @@ import { api } from "./api.js";
 import { notify, subscribeNotice } from "./notice.js";
 import { Workspace } from "./workspace.jsx";
 import { Icon, NAV_ICON } from "./icons.jsx";
-<<<<<<< HEAD
 import { LANGS, getLang, setLanguage, t, useLanguage } from "./i18n.js";
 
 const SITE_ORIGIN = "https://www.ishuriapp.com";
@@ -53,12 +52,6 @@ function visitorId() {
   }
 }
 
-=======
-import { LANGS, setLanguage, t, useLanguage } from "./i18n.js";
-
-const SESSION_KEY = "ishuri.pwa.session";
-
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 const NAV = [
   { id: "home", label: "Discover", path: "#/" },
   { id: "rankings", label: "Rankings", path: "#/rankings" },
@@ -80,7 +73,6 @@ function go(path) {
   window.location.hash = path;
 }
 
-<<<<<<< HEAD
 function scrollToId(id) {
   const node = document.getElementById(id);
   if (!node) return;
@@ -88,8 +80,6 @@ function scrollToId(id) {
   node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
 }
 
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 export default function App() {
   const lang = useLanguage();
   const hash = useHash();
@@ -135,16 +125,9 @@ export default function App() {
       desk: t("School workspace — IshuriApp"),
       school: t("School — IshuriApp"),
     };
-<<<<<<< HEAD
     if (route.name !== "school") {
       const description = t("IshuriApp is Rwanda’s school atlas. Search approved schools, open a school website, and compare national rankings, events and notices. Students and parents browse freely.");
       showBrand(titles[route.name] || titles.home, description, route.name !== "desk" && route.name !== "gate");
-=======
-    document.title = titles[route.name] || titles.home;
-    if (route.name !== "school") {
-      const description = document.querySelector('meta[name="description"]');
-      if (description) description.setAttribute("content", t("IshuriApp is Rwanda’s school atlas. Search approved schools, open a school website, and compare national rankings, events and notices. Students and parents browse freely."));
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     }
   }, [route.name, lang]);
 
@@ -154,10 +137,7 @@ export default function App() {
 
   return (
     <div className="app">
-<<<<<<< HEAD
       <a className="skip" href="#content">{t("Skip to content")}</a>
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       <div className="scene" aria-hidden="true">
         <span className="orb one" />
         <span className="orb two" />
@@ -178,23 +158,15 @@ export default function App() {
         </a>
         <nav className="nav">
           {NAV.map((item) => (
-<<<<<<< HEAD
             <button key={item.id} className={route.name === item.id ? "active" : ""} aria-current={route.name === item.id ? "page" : undefined} onClick={() => go(item.path)}>
-=======
-            <button key={item.id} className={route.name === item.id ? "active" : ""} onClick={() => go(item.path)}>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
               <Icon name={NAV_ICON[item.id]} />
               {t(item.label)}
             </button>
           ))}
         </nav>
         <label className="lang-switch">
-<<<<<<< HEAD
           <span className="lang-word">{t("Language")}</span>
           <span className="lang-mark" aria-hidden="true"><Icon name="globe" /></span>
-=======
-          <span>{t("Language")}</span>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           <select value={lang} aria-label={t("Language")} onChange={(event) => setLanguage(event.target.value)}>
             {LANGS.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
           </select>
@@ -204,11 +176,7 @@ export default function App() {
           <span>{session ? t("Workspace") : t("Staff sign in")}</span>
         </button>
       </header>
-<<<<<<< HEAD
       <main id="content" key={hash} className="stage">
-=======
-      <main key={hash} className="stage">
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         {route.name === "home" && <Home />}
         {route.name === "events" && <Events />}
         {route.name === "rankings" && <Rankings />}
@@ -217,7 +185,6 @@ export default function App() {
         {route.name === "gate" && <Gate onSignIn={signIn} />}
         {route.name === "desk" && <Workspace session={session} section={route.section} onSignOut={signOut} onSession={setSession} />}
       </main>
-<<<<<<< HEAD
       {workspace ? (
         <footer className="site-foot">
           <span>{t("IshuriApp · Rwanda’s school atlas")}</span>
@@ -260,12 +227,6 @@ export default function App() {
           </p>
         </footer>
       )}
-=======
-      <footer className="site-foot">
-        <span>{t("IshuriApp · Rwanda’s school atlas")}</span>
-        <span>{t("Students and parents browse freely. Staff sign in for the desk.")}</span>
-      </footer>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       <NoticeHost />
     </div>
   );
@@ -501,33 +462,8 @@ function AdStage({ ads, mode }) {
   );
 }
 
-<<<<<<< HEAD
 function uniquePlaces(values) {
   return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
-=======
-function WaveBand({ tint, extra = "" }) {
-  const path = "M0,64 C160,104 320,24 480,64 C640,104 800,24 960,64 C1120,104 1280,24 1440,64 L1440,140 L0,140 Z";
-  return (
-    <div className={`wave-band ${extra}`}>
-      <svg viewBox="0 0 1440 140" preserveAspectRatio="none" aria-hidden="true">
-        <path d={path} fill={tint} />
-      </svg>
-      <svg viewBox="0 0 1440 140" preserveAspectRatio="none" aria-hidden="true">
-        <path d={path} fill={tint} />
-      </svg>
-    </div>
-  );
-}
-
-function SeaBackdrop() {
-  return (
-    <div className="sea-bg" aria-hidden="true">
-      <WaveBand tint="rgba(79,195,247,0.55)" extra="far" />
-      <WaveBand tint="rgba(21,101,192,0.28)" extra="mid" />
-      <WaveBand tint="rgba(255,255,255,0.82)" extra="near" />
-    </div>
-  );
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 }
 
 function CrestGraphic() {
@@ -616,11 +552,7 @@ function CrestGraphic() {
 
 function SchoolMark({ school }) {
   const [failed, setFailed] = useState(false);
-<<<<<<< HEAD
   if (!school.logoUrl || failed) return <Icon name="school" />;
-=======
-  if (!school.logoUrl || failed) return school.name.slice(0, 1);
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   return <SoftImage src={school.logoUrl} alt="" onError={() => setFailed(true)} />;
 }
 
@@ -656,7 +588,6 @@ function SoftImage({ src, alt = "", className = "", onError }) {
   );
 }
 
-<<<<<<< HEAD
 const CAST = [
   { src: "/avatar-father.jpg?v=1", title: "Director" },
   { src: "/avatar-teacher.jpg?v=1", title: "Teachers" },
@@ -1125,16 +1056,10 @@ function Home() {
   const [pages, setPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [places, setPlaces] = useState([]);
-=======
-function Home() {
-  const [q, setQ] = useState("");
-  const [type, setType] = useState("");
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   const [schools, setSchools] = useState([]);
   const [ads, setAds] = useState([]);
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
-<<<<<<< HEAD
   const [pending, setPending] = useState(true);
   const [catalog, setCatalog] = useState([]);
   const [suggestOpen, setSuggestOpen] = useState(false);
@@ -1318,49 +1243,12 @@ function Home() {
       </form>
       <div className="filter-types">
         {[
-=======
-
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (q) params.set("q", q);
-    if (type) params.set("type", type);
-    Promise.all([api(`/public/schools?${params}`), api("/public/ads")])
-      .then(([schoolData, adData]) => {
-        setSchools(schoolData.items || []);
-        setAds(adData.items || []);
-        setError("");
-        setLoaded(true);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoaded(true);
-      });
-  }, [q, type]);
-
-  return (
-    <div className="page home-page">
-      <SeaBackdrop />
-      <header className="page-head">
-        <div>
-          <h1>{t("The quiet atlas of Rwanda’s classrooms.")}</h1>
-        </div>
-        <CrestGraphic />
-      </header>
-      {error ? <p className="banner">{error}. Start the API on port 4000, then search again.</p> : null}
-      <div className="toolbar">
-        <form className="search" onSubmit={(event) => event.preventDefault()}>
-          <input value={q} onChange={(event) => setQ(event.target.value)} placeholder={t("Search a school, district or motto")} />
-        </form>
-        <div className="chips">
-          {[
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           ["", "All"],
           ["primary", "Primary"],
           ["secondary", "Secondary"],
           ["tvet", "TVET"],
           ["university", "University"],
         ].map(([item, label]) => (
-<<<<<<< HEAD
           <button key={item || "all"} type="button" className={type === item ? "on" : ""} onClick={() => { setType(item); setPage(1); }}>
             <Icon name={item === "university" ? "landmark" : item ? "school" : "compass"} />
             {t(label)}
@@ -1485,33 +1373,10 @@ function Home() {
         </div>
         {pending && !error ? (
           <aside className="ad side-note skel-card" aria-hidden="true">
-=======
-            <button key={item || "all"} className={type === item ? "on" : ""} onClick={() => setType(item)}>
-              {t(label)}
-            </button>
-          ))}
-        </div>
-      </div>
-      {!loaded && !error ? (
-        <div className="layout" aria-hidden="true">
-          <div className="school-grid">
-            {[0, 1, 2, 3].map((item) => (
-              <div className="school skel-card" key={item}>
-                <div className="cover skel" />
-                <div className="school-body">
-                  <span className="logo skel" />
-                  <span className="skel-copy"><i className="skel" /><i className="skel short" /></span>
-                </div>
-              </div>
-            ))}
-          </div>
-          <aside className="ad side-note skel-card">
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
             <div className="skel skel-media" />
             <i className="skel" />
             <i className="skel short" />
           </aside>
-<<<<<<< HEAD
         ) : ads.length ? (
           <aside className="ad side-note">
             <AdStage ads={ads} mode="home" />
@@ -1522,41 +1387,10 @@ function Home() {
       </div>
       {loaded ? <DiscoverStory /> : <StorySkeleton />}
       {loaded ? <Faq /> : <FaqSkeleton />}
-=======
-        </div>
-      ) : (
-        <div className={ads.length ? "layout" : ""}>
-          <div className="school-grid">
-            {schools.map((school) => (
-              <button key={school._id} className="school" onClick={() => go(`#/school/${school.slug || school._id}`)}>
-                <div className="cover">
-                  {school.coverUrl ? <SoftImage src={school.coverUrl} alt="" /> : null}
-                  {school.nationalRank ? <b>#{school.nationalRank}</b> : null}
-                </div>
-                <div className="school-body">
-                  <span className="logo"><SchoolMark school={school} /></span>
-                  <span>
-                    <strong>{school.name}</strong>
-                    <em>{school.tagline || school.motto || [school.location?.district, school.location?.province].filter(Boolean).join(", ") || "Rwanda"}</em>
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-          {ads.length ? (
-            <aside className="ad side-note">
-              <AdStage ads={ads} mode="home" />
-            </aside>
-          ) : null}
-        </div>
-      )}
-      {loaded && schools.length === 0 && !error ? <p className="muted"><strong>{t("No schools yet")}</strong><br />{t("Approved schools appear here after IshuriApp review.")}</p> : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     </div>
   );
 }
 
-<<<<<<< HEAD
 function NowGraphic() {
   return (
     <svg className="now-crest" viewBox="0 0 320 200" role="img" aria-label={t("Notices schools choose to publish")}>
@@ -1675,31 +1509,6 @@ function Now() {
       {open != null && photos.length ? (
         <GalleryStage photos={photos} start={open} schoolName={photos[open]?.school?.name || t("IshuriApp")} onClose={() => setOpen(null)} />
       ) : null}
-=======
-function Now() {
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    api("/public/ads").then((data) => setItems(data.items || [])).catch((err) => setError(err.message)).finally(() => setLoaded(true));
-  }, []);
-  return (
-    <div className="page">
-      <header className="page-head">
-        <div>
-          <h1>{t("Now")}</h1>
-          <p className="lede">{t("The same ads as Discover. The image is shown first, then the video.")}</p>
-        </div>
-      </header>
-      {error ? <p className="banner">{error}</p> : null}
-      {!loaded && !error ? <div className="ad panel skel-card" aria-hidden="true"><div className="skel skel-stage" /><i className="skel" /><i className="skel short" /></div> : null}
-      {items.length ? (
-        <article className="ad panel">
-          <AdStage ads={items} mode="now" />
-        </article>
-      ) : null}
-      {loaded && items.length === 0 && !error ? <p className="muted">{t("No opportunities right now")}</p> : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     </div>
   );
 }
@@ -1774,7 +1583,6 @@ function EventsGraphic() {
 
 function EventCard({ event, showSchool = true, onOpen }) {
   const look = eventLook(event.category);
-<<<<<<< HEAD
   const locale = { rw: "rw-RW", sw: "sw", fr: "fr", en: "en-GB" }[getLang()] || "en-GB";
   const when = event.startsAt ? new Date(event.startsAt) : null;
   const day = when ? when.toLocaleDateString(locale, { day: "2-digit" }) : "—";
@@ -1783,15 +1591,6 @@ function EventCard({ event, showSchool = true, onOpen }) {
   const clock = when
     ? when.toLocaleString(locale, { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
     : t("Date to be set");
-=======
-  const when = event.startsAt ? new Date(event.startsAt) : null;
-  const day = when ? when.toLocaleDateString("en-GB", { day: "2-digit" }) : "—";
-  const month = when ? when.toLocaleDateString("en-GB", { month: "short" }) : "";
-  const year = when ? String(when.getFullYear()) : "";
-  const clock = when
-    ? when.toLocaleString("en-GB", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })
-    : "Date to be set";
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   return (
     <article className="event-card" onClick={onOpen} style={{ cursor: onOpen ? "pointer" : "default" }}>
       <div className="event-art">
@@ -1821,7 +1620,6 @@ function Events() {
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-<<<<<<< HEAD
     let cancel = false;
     const started = performance.now();
     api("/public/events")
@@ -1838,14 +1636,10 @@ function Events() {
         setLoaded(true);
       });
     return () => { cancel = true; };
-=======
-    api("/public/events").then((data) => setItems(data.items || [])).catch((err) => setError(err.message)).finally(() => setLoaded(true));
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   }, []);
   return (
     <div className="page">
       <header className="page-head">
-<<<<<<< HEAD
         {!loaded && !error ? (
           <>
             <div className="skel-copy">
@@ -1864,13 +1658,6 @@ function Events() {
             <EventsGraphic />
           </>
         )}
-=======
-        <div>
-          <h1>{t("School events")}</h1>
-          <p className="lede">{t("Meetings, sports, debates, visiting days, graduations and scholarships.")}</p>
-        </div>
-        <EventsGraphic />
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       </header>
       {error ? <p className="banner">{error}</p> : null}
       {!loaded && !error ? (
@@ -1882,11 +1669,7 @@ function Events() {
             </article>
           ))}
         </div>
-<<<<<<< HEAD
       ) : (
-=======
-      ) : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       <div className="event-board">
         {items.map((event) => (
           <EventCard
@@ -1896,10 +1679,7 @@ function Events() {
           />
         ))}
       </div>
-<<<<<<< HEAD
       )}
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       {loaded && items.length === 0 && !error ? <p className="muted">{t("No public events")}</p> : null}
     </div>
   );
@@ -1911,7 +1691,6 @@ function Rankings() {
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   useEffect(() => {
-<<<<<<< HEAD
     let cancel = false;
     const started = performance.now();
     setLoaded(false);
@@ -1930,10 +1709,6 @@ function Rankings() {
         setLoaded(true);
       });
     return () => { cancel = true; };
-=======
-    setLoaded(false);
-    api(`/public/rankings?type=${type}`).then((data) => setItems(data.items || [])).catch((err) => setError(err.message)).finally(() => setLoaded(true));
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   }, [type]);
   return (
     <div className="page">
@@ -1942,7 +1717,6 @@ function Rankings() {
           <h1>{t("National rankings")}</h1>
           <p className="lede">{t("Performance snapshots published by each approved school, with national rank.")}</p>
         </div>
-<<<<<<< HEAD
         <div className="chips" role="group" aria-label={t("Type")}>
           {[
             ["primary", "Primary"],
@@ -1951,16 +1725,10 @@ function Rankings() {
             ["university", "University"],
           ].map(([item, label]) => (
             <button key={item} className={type === item ? "on" : ""} onClick={() => setType(item)}>{t(label)}</button>
-=======
-        <div className="chips">
-          {["primary", "secondary", "tvet", "university"].map((item) => (
-            <button key={item} className={type === item ? "on" : ""} onClick={() => setType(item)}>{item}</button>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           ))}
         </div>
       </header>
       {error ? <p className="banner">{error}</p> : null}
-<<<<<<< HEAD
       {!loaded && !error ? (
         <div className="skel-rows" aria-hidden="true">
           {[0, 1, 2, 3, 4, 5].map((item) => (
@@ -1973,11 +1741,6 @@ function Rankings() {
       ) : null}
       {loaded && items.length === 0 && !error ? <p className="muted">{t("No ranked schools in this category")}</p> : null}
       {loaded && items.length > 0 ? (
-=======
-      {!loaded && !error ? <div className="skel-rows" aria-hidden="true">{[0, 1, 2, 3, 4].map((item) => <i className="skel" key={item} />)}</div> : null}
-      {loaded && items.length === 0 && !error ? <p className="muted">{t("No ranked schools in this category")}</p> : null}
-      {items.length > 0 ? (
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         <table className="board rank-list">
           <thead>
             <tr><th>{t("Place")}</th><th>{t("School")}</th><th>{t("District")}</th><th>{t("Type")}</th></tr>
@@ -2016,11 +1779,7 @@ function CampusPhoto({ item, name, onOpen }) {
         <SoftImage alt={item.caption || name} src={item.imageUrl} />
         {item.caption || item.album ? (
           <figcaption>
-<<<<<<< HEAD
             {item.album ? <em><Icon name="image" />{item.album}</em> : null}
-=======
-            {item.album ? <em>{item.album}</em> : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
             {item.caption ? <span>{item.caption}</span> : null}
           </figcaption>
         ) : null}
@@ -2064,19 +1823,11 @@ function GalleryStage({ photos, start, schoolName, onClose }) {
     <div className="lightbox" role="dialog" aria-modal="true" aria-label={photo?.caption || schoolName} onClick={onClose}>
       <button className="lightbox-close" type="button" onClick={onClose}>
         <Icon name="close" />
-<<<<<<< HEAD
         {t("Close")}
       </button>
       <button className="lightbox-step prev" type="button" onClick={(event) => step(event, -1)} disabled={!several}>
         <Icon name="left" />
         {t("Previous")}
-=======
-        Close
-      </button>
-      <button className="lightbox-step prev" type="button" onClick={(event) => step(event, -1)} disabled={!several}>
-        <Icon name="left" />
-        Previous
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       </button>
       <figure className="lightbox-frame" onClick={(event) => event.stopPropagation()}>
         {failed || !photo?.imageUrl ? (
@@ -2085,7 +1836,6 @@ function GalleryStage({ photos, start, schoolName, onClose }) {
           <img alt={photo.caption || schoolName} src={photo.imageUrl} onError={() => setFailed(true)} />
         )}
         <figcaption className="lightbox-copy">
-<<<<<<< HEAD
           <p className="kicker">{t(photo?.album || "Campus")} · {index + 1} {t("of")} {photos.length}</p>
           <h2>{photo?.caption || schoolName}</h2>
           <p>{schoolName}{added ? ` · ${t("Added")} ${added}` : ""}</p>
@@ -2093,15 +1843,6 @@ function GalleryStage({ photos, start, schoolName, onClose }) {
       </figure>
       <button className="lightbox-step next" type="button" onClick={(event) => step(event, 1)} disabled={!several}>
         {t("Next")}
-=======
-          <p className="kicker">{photo?.album || "Campus"} · {index + 1} of {photos.length}</p>
-          <h2>{photo?.caption || schoolName}</h2>
-          <p>{schoolName}{added ? ` · Added ${added}` : ""}</p>
-        </figcaption>
-      </figure>
-      <button className="lightbox-step next" type="button" onClick={(event) => step(event, 1)} disabled={!several}>
-        Next
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         <Icon name="right" />
       </button>
     </div>,
@@ -2109,7 +1850,6 @@ function GalleryStage({ photos, start, schoolName, onClose }) {
   );
 }
 
-<<<<<<< HEAD
 function SchoolDossier({ school, announcements = [], nextEvent }) {
   const location = school.location || {};
   const socials = Object.entries(school.socials || {}).filter(([, value]) => String(value || "").trim());
@@ -2226,8 +1966,6 @@ function SchoolDossier({ school, announcements = [], nextEvent }) {
   );
 }
 
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 function SchoolPage({ id }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -2235,7 +1973,6 @@ function SchoolPage({ id }) {
   const [logoFailed, setLogoFailed] = useState(false);
   const [openPhoto, setOpenPhoto] = useState(null);
   useEffect(() => {
-<<<<<<< HEAD
     let cancel = false;
     const started = performance.now();
     setTab("Home");
@@ -2253,27 +1990,12 @@ function SchoolPage({ id }) {
         if (!cancel) setError(err.message);
       });
     return () => { cancel = true; };
-=======
-    setTab("Home");
-    setLogoFailed(false);
-    setOpenPhoto(null);
-    api(`/public/schools/${id}`).then(setData).catch((err) => setError(err.message));
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   }, [id]);
   useEffect(() => {
     if (!data?.school?.name) return;
     const about = (data.school.motto || data.school.about || "").replace(/\s+/g, " ").trim();
-<<<<<<< HEAD
     const line = (about ? `${data.school.name}. ${about}` : `${data.school.name} on IshuriApp, Rwanda’s school atlas.`).slice(0, 160);
     showBrand(`${data.school.name} — IshuriApp`, line, true);
-=======
-    document.title = `${data.school.name} — IshuriApp`;
-    const description = document.querySelector('meta[name="description"]');
-    if (description) {
-      const line = about ? `${data.school.name}. ${about}` : `${data.school.name} on IshuriApp, Rwanda’s school atlas.`;
-      description.setAttribute("content", line.slice(0, 160));
-    }
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   }, [data]);
   if (error) return <div className="page"><p className="banner">{error}</p></div>;
   if (!data) {
@@ -2281,7 +2003,6 @@ function SchoolPage({ id }) {
       <article className="campus" aria-hidden="true">
         <header className="campus-hero skel" />
         <div className="campus-sheet">
-<<<<<<< HEAD
           <div className="campus-identity">
             <i className="skel logo-skel" />
             <div className="skel-copy">
@@ -2301,13 +2022,6 @@ function SchoolPage({ id }) {
         <div className="campus-body skel-rows">
           <i className="skel card-skel" />
           <i className="skel card-skel" />
-=======
-          <div className="skel-copy">
-            <i className="skel short" />
-            <i className="skel" />
-            <i className="skel" />
-          </div>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         </div>
       </article>
     );
@@ -2323,11 +2037,7 @@ function SchoolPage({ id }) {
       <div className="campus-sheet">
         <div className="campus-identity">
           <div className="campus-mark">
-<<<<<<< HEAD
             {school.logoUrl && !logoFailed ? <SoftImage src={school.logoUrl} alt="" onError={() => setLogoFailed(true)} /> : <span><Icon name="school" /></span>}
-=======
-            {school.logoUrl && !logoFailed ? <SoftImage src={school.logoUrl} alt="" onError={() => setLogoFailed(true)} /> : <span>{(school.name || "I").slice(0, 1)}</span>}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           </div>
           <div className="campus-title">
             <p className="kicker"><Icon name="shield" />{school.verified ? t("Admin verified") : t("Unverified")} · {t(school.type)}</p>
@@ -2336,11 +2046,7 @@ function SchoolPage({ id }) {
             <p className="place-line">
               <Icon name="pin" />
               {place}
-<<<<<<< HEAD
               {school.nationalRank ? <span className="rank-flag"><Icon name="award" />{t("National rank")} #{school.nationalRank}</span> : null}
-=======
-              {school.nationalRank ? <span className="rank-flag"><Icon name="award" />National rank #{school.nationalRank}</span> : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
             </p>
           </div>
           <section className="campus-stats" aria-label={t("School figures")}>
@@ -2359,52 +2065,7 @@ function SchoolPage({ id }) {
         </nav>
       </div>
       <div className="campus-body">
-<<<<<<< HEAD
         {tab === "Home" ? <SchoolDossier school={school} announcements={data.announcements || []} nextEvent={nextEvent} /> : null}
-=======
-        {tab === "Home" ? (
-          <div className="welcome-grid">
-            {textBlocks(school.about).length ? (
-              <section className="welcome-card welcome-lead">
-                <span className="welcome-mark"><Icon name="school" /></span>
-                <div className="welcome-copy">
-                  <p className="kicker"><Icon name="home" />{t("Home")}</p>
-                  <h2>{t("Welcome")}</h2>
-                  {textBlocks(school.about).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </div>
-              </section>
-            ) : null}
-            {school.tagline && school.tagline !== school.motto ? (
-              <section className="welcome-card">
-                <span className="welcome-mark"><Icon name="info" /></span>
-                <div className="welcome-copy">
-                  <p className="kicker">{t("In short")}</p>
-                  <p>{school.tagline}</p>
-                </div>
-              </section>
-            ) : null}
-            {school.performanceSummary ? (
-              <section className="welcome-card">
-                <span className="welcome-mark"><Icon name="chart" /></span>
-                <div className="welcome-copy">
-                  <p className="kicker"><Icon name="chart" />{t("Performance")}</p>
-                  {textBlocks(school.performanceSummary).map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-                </div>
-              </section>
-            ) : null}
-            {nextEvent ? (
-              <section className="welcome-card">
-                <span className="welcome-mark"><Icon name="calendar" /></span>
-                <div className="welcome-copy">
-                  <p className="kicker"><Icon name="calendar" />{t("Next event")}</p>
-                  <h2>{nextEvent.title}</h2>
-                  <p className="muted">{new Date(nextEvent.startsAt).toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short", year: "numeric" })}{nextEvent.venue ? ` · ${nextEvent.venue}` : ""}</p>
-                </div>
-              </section>
-            ) : null}
-          </div>
-        ) : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
         {tab === "About" ? (
           <div className="campus-about">
             {school.history ? <section className="campus-card"><CampusHeading icon="landmark">{t("History")}</CampusHeading><p>{school.history}</p></section> : null}
@@ -2428,11 +2089,7 @@ function SchoolPage({ id }) {
                 {(school.examResults || []).map((result) => (
                   <p key={`${result.year}-${result.exam}`}>
                     <strong>{result.year} {result.exam}</strong>
-<<<<<<< HEAD
                     <span>{result.passRate != null ? `${result.passRate}% ${t("Pass")}` : ""}{result.distinctionRate ? `${result.passRate != null ? ", " : ""}${result.distinctionRate}% ${t("Distinction")}` : ""} {result.notes || ""}</span>
-=======
-                    <span>{result.passRate}% pass{result.distinctionRate ? `, ${result.distinctionRate}% distinction` : ""} {result.notes || ""}</span>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
                   </p>
                 ))}
               </section>
@@ -2495,11 +2152,7 @@ function SchoolPage({ id }) {
           )
         ) : null}
         {tab === "Gallery" ? (
-<<<<<<< HEAD
           (data.gallery || []).length === 0 ? <p className="muted campus-empty"><Icon name="image" />{t("No photos yet")}</p> : (
-=======
-          (data.gallery || []).length === 0 ? <p className="muted campus-empty">{t("No photos yet")}</p> : (
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
             <div className="campus-gallery">
               {data.gallery.map((item, index) => (
                 <CampusPhoto key={item._id} item={item} name={school.name} onOpen={() => setOpenPhoto(index)} />
@@ -2511,7 +2164,6 @@ function SchoolPage({ id }) {
           <section className="campus-card contact-sheet">
             <div>
               <CampusHeading icon="pin">{t("Address")}</CampusHeading>
-<<<<<<< HEAD
               <p>{[school.location?.address, school.location?.landmark, school.location?.village, school.location?.cell, place].filter(Boolean).join(" · ") || place}</p>
               {school.visitingHours ? <><CampusHeading icon="clock">{t("Visiting hours")}</CampusHeading><p>{school.visitingHours}</p></> : null}
             </div>
@@ -2520,15 +2172,6 @@ function SchoolPage({ id }) {
               {school.whatsapp ? <a className="ghost" href={`https://wa.me/${String(school.whatsapp).replace(/\D/g, "")}`}><Icon name="chat" />{t("WhatsApp the school")}</a> : null}
               {school.email ? <a className="ghost" href={`mailto:${school.email}`}><Icon name="mail" />{school.email}</a> : null}
               {school.website ? <a className="ghost" href={school.website} target="_blank" rel="noreferrer"><Icon name="link" />{t("Website")}</a> : null}
-=======
-              <p>{school.location?.address || place}</p>
-              {school.visitingHours ? <><CampusHeading icon="clock">{t("Visiting hours")}</CampusHeading><p>{school.visitingHours}</p></> : null}
-            </div>
-            <div className="contact-actions">
-              {school.phone ? <a className="ghost" href={`tel:${school.phone}`}><Icon name="phone" />Call {school.phone}</a> : null}
-              {school.whatsapp ? <a className="ghost" href={`https://wa.me/${String(school.whatsapp).replace(/\D/g, "")}`}><Icon name="chat" />{t("WhatsApp the school")}</a> : null}
-              {school.email ? <a className="ghost" href={`mailto:${school.email}`}><Icon name="mail" />{school.email}</a> : null}
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
               {school.location?.latitude && school.location?.longitude ? <a className="solid" href={`https://www.google.com/maps?q=${school.location.latitude},${school.location.longitude}`} target="_blank" rel="noreferrer"><Icon name="map" />{t("Open map")}</a> : <button className="ghost" type="button" onClick={() => notify("Location", place)}><Icon name="pin" />{t("Location listed on profile")}</button>}
             </div>
           </section>
@@ -2618,7 +2261,6 @@ function GateSignals() {
   );
 }
 
-<<<<<<< HEAD
 const GATE_PHOTOS = ["/avatar-mother.jpg?v=1", "/avatar-father.jpg?v=1", "/avatar-teacher.jpg?v=1", "/avatar-officer.jpg?v=1"];
 
 function GateSkeleton() {
@@ -2637,14 +2279,11 @@ function GateSkeleton() {
   );
 }
 
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
 function Gate({ onSignIn }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-<<<<<<< HEAD
   const [ready, setReady] = useState(false);
   const [entering, setEntering] = useState(false);
 
@@ -2666,28 +2305,17 @@ function Gate({ onSignIn }) {
   async function submit(event) {
     event.preventDefault();
     setEntering(true);
-=======
-
-  async function submit(event) {
-    event.preventDefault();
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
     try {
       const data = await api("/auth/login", { method: "POST", body: { email, password } });
       onSignIn({ token: data.token, user: data.user, school: data.school });
     } catch (err) {
-<<<<<<< HEAD
       setEntering(false);
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       setError(err.message);
     }
   }
 
-<<<<<<< HEAD
   if (!ready || entering) return <GateSkeleton />;
 
-=======
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
   return (
     <section className="gate">
       <div className="gate-brand">
@@ -2698,29 +2326,17 @@ function Gate({ onSignIn }) {
           <h1>{t("School team sign in")}</h1>
           <p className="lede">{t("Students and parents browse freely. This login is for directors, teachers and IshuriApp staff.")}</p>
         </div>
-<<<<<<< HEAD
         <label className="field">{t("Email")}
-=======
-        <label className="field">Email
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           <span className="gate-input">
             <Icon name="mail" />
             <input value={email} onChange={(event) => setEmail(event.target.value)} autoComplete="username" placeholder={t("you@school.rw")} />
           </span>
         </label>
-<<<<<<< HEAD
         <label className="field">{t("Password")}
           <span className="secret-field gate-input">
             <Icon name="lock" />
             <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder={t("Your password")} />
             <button className="secret-toggle" type="button" aria-pressed={showPassword} aria-label={showPassword ? t("Hide password") : t("Show password")} onClick={() => setShowPassword((current) => !current)}>{showPassword ? t("Hide") : t("Show")}</button>
-=======
-        <label className="field">Password
-          <span className="secret-field gate-input">
-            <Icon name="lock" />
-            <input type={showPassword ? "text" : "password"} value={password} onChange={(event) => setPassword(event.target.value)} autoComplete="current-password" placeholder={t("Your password")} />
-            <button className="secret-toggle" type="button" aria-pressed={showPassword} aria-label={showPassword ? "Hide password" : "Show password"} onClick={() => setShowPassword((current) => !current)}>{showPassword ? "Hide" : "Show"}</button>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
           </span>
         </label>
         {error ? <p className="banner">{error}</p> : null}

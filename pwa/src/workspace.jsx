@@ -1732,13 +1732,8 @@ function Profile({ session, onSession }) {
   const fields = (
     <div className="form-grid">
       <Field label="School name" value={draft.name} onChange={(value) => set("name", value)} />
-<<<<<<< HEAD
       <label className="field">{t("Type")}
         <select value={draft.type} onChange={(event) => set("type", event.target.value)}>{TYPES.map((type) => <option key={type} value={type}>{t(type)}</option>)}</select>
-=======
-      <label className="field">Type
-        <select value={draft.type} onChange={(event) => set("type", event.target.value)}>{TYPES.map((type) => <option key={type}>{type}</option>)}</select>
->>>>>>> ee5f09a529cb6609ed2f93d7af0d259043defd64
       </label>
       <Field label="Motto" value={draft.motto} onChange={(value) => set("motto", value)} />
       <Field label="Tagline" value={draft.tagline} onChange={(value) => set("tagline", value)} />
