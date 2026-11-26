@@ -28,6 +28,31 @@ function zonedMidnight(year, month, day) {
   return new Date(guess.getTime() - (asUtc - guess.getTime()));
 }
 
+function dayStamp(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
+}
+
+function reportWindow(query) {
+  const period = ["week", "month", "year"].includes(query.period) ? query.period : "month";
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  let fromDay = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(periodStart(period));
+  let toDay = today;
+  const year = /^\d{4}$/.test(String(query.year || "")) ? String(query.year) : "";
+  const from = dayStamp(query.from);
+  const to = dayStamp(query.to);
+  if (year) {
+    if (`${year}-01-01` > fromDay) fromDay = `${year}-01-01`;
+    if (`${year}-12-31` < toDay) toDay = `${year}-12-31`;
+  }
+  if (from && from > fromDay) fromDay = from;
+  if (to && to < toDay) toDay = to;
+  const [fromYear, fromMonth, fromDate] = fromDay.split("-").map(Number);
+  const [toYear, toMonth, toDate] = toDay.split("-").map(Number);
+  const start = zonedMidnight(fromYear, fromMonth, fromDate);
+  const end = new Date(zonedMidnight(toYear, toMonth, toDate).getTime() + 86400000);
+  return { period, fromDay, toDay, start, end };
+}
+
 function periodStart(period) {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
   const [year, month, day] = today.split("-").map(Number);
@@ -170,12 +195,10 @@ router.get(
 router.get(
   "/reports",
   asyncHandler(async (req, res) => {
-    const period = ["week", "month", "year"].includes(req.query.period) ? req.query.period : "month";
-    const start = periodStart(period);
+    const { period, fromDay, toDay, start, end } = reportWindow(req.query);
     const schools = await School.find().select("name status type").sort({ name: 1 });
     const schoolIds = schools.map((school) => school._id);
 
-    const fromDay = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(start);
     const categoryExpr = {
       $cond: [
         { $in: [{ $ifNull: ["$category", ""] }, ["marks", "results", "discipline", "notice"]] },
@@ -207,7 +230,7 @@ router.get(
         },
       ]),
       SmsLedger.aggregate([
-        { $match: { type: "send_debit", school: { $in: schoolIds }, createdAt: { $gte: start } } },
+        { $match: { type: "send_debit", school: { $in: schoolIds }, createdAt: { $gte: start, $lt: end } } },
         { $addFields: { resolvedCategory: categoryExpr } },
         {
           $group: {
@@ -225,7 +248,7 @@ router.get(
         { $group: { _id: "$school", count: { $sum: 1 } } },
       ]),
       Student.aggregate([
-        { $match: { school: { $in: schoolIds }, createdAt: { $gte: start } } },
+        { $match: { school: { $in: schoolIds }, createdAt: { $gte: start, $lt: end } } },
         { $group: { _id: "$school", count: { $sum: 1 } } },
       ]),
       Staff.aggregate([
@@ -233,7 +256,7 @@ router.get(
         { $group: { _id: "$school", count: { $sum: 1 } } },
       ]),
       Staff.aggregate([
-        { $match: { category: "teacher", school: { $in: schoolIds }, createdAt: { $gte: start } } },
+        { $match: { category: "teacher", school: { $in: schoolIds }, createdAt: { $gte: start, $lt: end } } },
         { $group: { _id: "$school", count: { $sum: 1 } } },
       ]),
       Staff.aggregate([
@@ -268,7 +291,7 @@ router.get(
     const items = schools.map((school) => {
       const id = String(school._id);
       const history = (historyMap.get(id) || []).sort((a, b) => a.bucket.localeCompare(b.bucket));
-      const inPeriod = history.filter((point) => point.bucket >= fromDay);
+      const inPeriod = history.filter((point) => point.bucket >= fromDay && point.bucket <= toDay);
       return {
         school: { _id: school._id, name: school.name, status: school.status, type: school.type },
         messages: inPeriod.reduce((sum, point) => sum + point.messages, 0),
@@ -303,7 +326,7 @@ router.get(
       period,
       timezone: TIMEZONE,
       from: start,
-      to: new Date(),
+      to: new Date(end.getTime() - 1),
       totals,
       items,
       rules: {
@@ -685,7 +708,7 @@ router.post(
     if (exists) throw new ApiError(409, "An account with this email already exists");
     const msisdn = phone && String(phone).trim() ? optionalMsisdn(phone) : "";
     if (phone && String(phone).trim() && !msisdn) {
-      throw new ApiError(400, "Phone must begin with 250, for example 250788000000.");
+      throw new ApiError(400, "The phone number must be 10 digits and start with 07.");
     }
     const user = await User.create({
       fullName,

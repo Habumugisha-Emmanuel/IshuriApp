@@ -8,7 +8,7 @@ const { optionalMsisdn } = require("../utils/phone");
 function storedPhone(raw, label) {
   if (raw === undefined || raw === null || String(raw).trim() === "") return "";
   const phone = optionalMsisdn(raw);
-  if (!phone) throw new ApiError(400, `${label} must begin with 250, for example 250788000000.`);
+  if (!phone) throw new ApiError(400, `${label} must be 10 digits and start with 07.`);
   return phone;
 }
 
@@ -25,6 +25,8 @@ const roleMap = {
   admin: "school_admin",
   leadership: "school_admin",
   support: "teacher",
+  accountant: "accountant",
+  dos: "dos",
 };
 
 router.get(
@@ -61,8 +63,11 @@ router.post(
       whatsapp,
     } = req.body;
     if (!fullName || !roleTitle) throw new ApiError(400, "Name and role title are required");
-    if (category === "accountant") {
-      throw new ApiError(400, "Accountant accounts are not part of IshuriApp");
+    if (category === "accountant" && (!email || !password)) {
+      throw new ApiError(400, "An accountant needs an email and a password to sign in.");
+    }
+    if (category === "dos" && (!email || !password)) {
+      throw new ApiError(400, "The Director of Studies needs an email and a password to sign in.");
     }
 
     const userRole = roleMap[category] || "teacher";
@@ -127,8 +132,7 @@ router.patch(
       "phone",
       "whatsapp",
       "socials",
-      "subjects",
-      "classes",
+      ...(isDirector ? ["subjects", "classes"] : []),
     ];
     allowed.forEach((key) => {
       if (req.body[key] === undefined) return;
@@ -137,7 +141,6 @@ router.patch(
       else staff[key] = req.body[key];
     });
     if (isDirector && req.body.category !== undefined) {
-      if (req.body.category === "accountant") throw new ApiError(400, "Accountant accounts are not part of IshuriApp");
       staff.category = req.body.category;
     }
     if (isDirector) {

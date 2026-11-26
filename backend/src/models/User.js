@@ -7,6 +7,7 @@ const ROLES = [
   "teacher",
   "discipline",
   "accountant",
+  "dos",
   "student",
   "parent",
 ];

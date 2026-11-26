@@ -25,6 +25,7 @@ const PATHS = {
   close: "M7 7l10 10M17 7L7 17",
   left: "M14.5 5.5L8 12l6.5 6.5",
   right: "M9.5 5.5L16 12l-6.5 6.5",
+  play: "M9 7.2v9.6l8-4.8-8-4.8z",
   home: "M4.5 11.2L12 4.8l7.5 6.4V19a1 1 0 0 1-1 1h-4.2v-5.2H9.7V20H5.5a1 1 0 0 1-1-1v-7.8z",
   pin: "M12 21s6.2-5.6 6.2-10.2a6.2 6.2 0 1 0-12.4 0C5.8 15.4 12 21 12 21zM12 12.4a1.8 1.8 0 1 0 0-3.6 1.8 1.8 0 0 0 0 3.6z",
   award: "M8.2 3.8h7.6v4.2a3.8 3.8 0 1 1-7.6 0V3.8zM8.2 4.6H6.2M15.8 4.6h2M9.2 14.2L8 20.2l4-2.2 4 2.2-1.2-6",
@@ -45,6 +46,16 @@ const PATHS = {
   star: "M12 3.2l2.15 4.55 5.05.7-3.65 3.5.9 5.05L12 14.7 7.55 17l.9-5.05L4.8 8.45l5.05-.7L12 3.2z",
   heart: "M12 19.4S5.4 15.2 5.4 10.8A3.7 3.7 0 0 1 12 8.6a3.7 3.7 0 0 1 6.6 2.2c0 4.4-6.6 8.6-6.6 8.6z",
   globe: "M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM4.2 12h15.6M12 4.2c2.1 2.3 3.2 5 3.2 7.8s-1.1 5.5-3.2 7.8c-2.1-2.3-3.2-5-3.2-7.8s1.1-5.5 3.2-7.8z",
+  receipt: "M7 3.5h10v17l-2-1.4-2 1.4-2-1.4-2 1.4-2-1.4V3.5zM9 8h6M9 11.5h6M9 15h4",
+  coins: "M12 4.5c4 0 7 1.3 7 3s-3 3-7 3-7-1.3-7-3 3-3 7-3zM5 7.5v4c0 1.7 3 3 7 3s7-1.3 7-3v-4M5 11.5v4c0 1.7 3 3 7 3s7-1.3 7-3v-4",
+  up: "M12 19V6M7.5 10.5L12 6l4.5 4.5",
+  down: "M12 5v13M7.5 13.5L12 18l4.5-4.5",
+  chevron: "M7 10l5 5 5-5",
+  bell: "M6.2 9.2a5.8 5.8 0 0 1 11.6 0c0 6.2 2.4 7.3 2.4 7.3H3.8s2.4-1.1 2.4-7.3zM10 19.2a2 2 0 0 0 4 0",
+  sun: "M12 16.2a4.2 4.2 0 1 0 0-8.4 4.2 4.2 0 0 0 0 8.4zM12 3.2v1.8M12 19v1.8M3.2 12h1.8M19 12h1.8M5.6 5.6l1.3 1.3M17.1 17.1l1.3 1.3M18.4 5.6l-1.3 1.3M6.9 17.1l-1.3 1.3",
+  moon: "M16.5 14.2A6.2 6.2 0 0 1 9.8 4.8 6.4 6.4 0 1 0 16.5 14.2z",
+  trash: "M5 7.5h14M9.5 7.5V5.8h5V7.5M7.2 7.5l.7 11.2h8.2l.7-11.2M10.2 11v5M13.8 11v5",
+  gear: "M12 15.4a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8zM19.2 13.2l1.4 1.1-1.5 2.6-1.8-.6a6.8 6.8 0 0 1-1.6 1l-.3 1.9h-3l-.3-1.9a6.8 6.8 0 0 1-1.6-1l-1.8.6-1.5-2.6 1.4-1.1a6.6 6.6 0 0 1 0-2.4l-1.4-1.1 1.5-2.6 1.8.6a6.8 6.8 0 0 1 1.6-1l.3-1.9h3l.3 1.9a6.8 6.8 0 0 1 1.6 1l1.8-.6 1.5 2.6-1.4 1.1a6.6 6.6 0 0 1 0 2.4z",
 };
 
 export function Icon({ name, className = "ico" }) {
@@ -56,7 +67,7 @@ export function Icon({ name, className = "ico" }) {
   );
 }
 
-export const NAV_ICON = { home: "compass", rankings: "chart", events: "calendar", now: "bolt" };
+export const NAV_ICON = { home: "compass", schools: "school", rankings: "chart", events: "calendar", now: "bolt" };
 export const TILE_ICON = {
   reports: "chart",
   approvals: "shield",
@@ -70,6 +81,13 @@ export const TILE_ICON = {
   analytics: "chart",
   wallets: "wallet",
   marks: "pen",
+  studies: "award",
   discipline: "scale",
   chat: "chat",
+  books: "coins",
+  status: "people",
+  standing: "award",
+  summary: "chart",
+  follow: "check",
+  settings: "gear",
 };

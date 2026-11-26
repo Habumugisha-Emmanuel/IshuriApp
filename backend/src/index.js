@@ -24,6 +24,7 @@ const followRoutes = require("./routes/follows");
 const uploadRoutes = require("./routes/uploads");
 const adminRoutes = require("./routes/admin");
 const chatRoutes = require("./routes/chat");
+const accountRoutes = require("./routes/accounts");
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use("/api/follows", followRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api/accounts", accountRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

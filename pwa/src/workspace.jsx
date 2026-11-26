@@ -1,13 +1,20 @@
-import { t } from "./i18n.js";
-import { useEffect, useMemo, useState } from "react";
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, uploadFile } from "./api.js";
+import { LANGS, setLanguage, t, useLanguage } from "./i18n.js";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { api, media, uploadFile } from "./api.js";
 import { act, notify, track } from "./notice.js";
 import { Icon, TILE_ICON } from "./icons.jsx";
 import { MessageAnalytics, MessagesGraphic } from "./messageAnalytics.jsx";
 import { MessageWallets, WalletBanner } from "./messageWallet.jsx";
-import { OfficialPreview, ReportLogos } from "./officialReport.jsx";
-import { LiveChat, MessageBell, useChatInbox } from "./liveChat.jsx";
+import { OfficialPreview, PrintHeading, ReportLogos, ReportPrint } from "./officialReport.jsx";
+import { LiveChat, useChatInbox } from "./liveChat.jsx";
+import { AccountantPortal, StudentSearch, accountantNav } from "./accountant.jsx";
+import { TeacherBoard } from "./teacher.jsx";
+import { DeskLoading, DeskSearch, DirectorBoard, DisciplineBoard, PlatformBoard, QuietBoard, StudiesBoard } from "./deskHome.jsx";
+import { Studies } from "./studies.jsx";
+import { FollowUp } from "./followUp.jsx";
+import { DisciplineStanding } from "./disciplineStanding.jsx";
+import { localPhone, takePhone } from "./phone.js";
 
 const SESSION_KEY = "ishuri.pwa.session";
 
@@ -15,17 +22,20 @@ function go(path) {
   window.location.hash = path;
 }
 
-function Field({ label, value, onChange, type = "text", placeholder, multiline, autoComplete }) {
+function Field({ label, value, onChange, type = "text", placeholder, multiline, autoComplete, error = "", submitted = false, maxLength }) {
   const [visible, setVisible] = useState(false);
+  const [touched, setTouched] = useState(false);
   const secret = type === "password";
+  const message = error && (touched || submitted) ? error : "";
+  const described = message ? `err-${String(label).replace(/[^a-z0-9]+/gi, "-").toLowerCase()}` : undefined;
   return (
-    <label className="field">
+    <label className={message ? "field invalid" : "field"}>
       {t(label)}
       {multiline ? (
-        <textarea value={value} rows={4} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
+        <textarea value={value} rows={4} maxLength={maxLength} placeholder={placeholder} aria-invalid={message ? true : undefined} aria-describedby={described} onBlur={() => setTouched(true)} onChange={(event) => onChange(maxLength ? event.target.value.slice(0, maxLength) : event.target.value)} />
       ) : (
         <span className={secret ? "secret-field" : undefined}>
-          <input type={secret && visible ? "text" : type} value={value} placeholder={placeholder} autoComplete={autoComplete} onChange={(event) => onChange(event.target.value)} />
+          <input type={secret && visible ? "text" : type} value={value} maxLength={maxLength} placeholder={placeholder} autoComplete={autoComplete} aria-invalid={message ? true : undefined} aria-describedby={described} onBlur={() => setTouched(true)} onChange={(event) => onChange(maxLength ? event.target.value.slice(0, maxLength) : event.target.value)} />
           {secret ? (
             <button className="secret-toggle" type="button" aria-pressed={visible} aria-label={visible ? t("Hide password") : t("Show password")} onClick={() => setVisible((current) => !current)}>
               {visible ? t("Hide") : t("Show")}
@@ -33,13 +43,46 @@ function Field({ label, value, onChange, type = "text", placeholder, multiline, 
           ) : null}
         </span>
       )}
+      {message ? <span className="field-error" id={described} role="alert"><Icon name="alert" />{t(message)}</span> : null}
     </label>
   );
+}
+
+function ValidationAlert({ message }) {
+  if (!message) return null;
+  return (
+    <p className="form-alert" role="alert">
+      <Icon name="alert" />
+      <span>{t(message)}</span>
+    </p>
+  );
+}
+
+function markIssue(value, max) {
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  if (!/^\d+(\.\d+)?$/.test(text)) return true;
+  const score = Number(text);
+  return !Number.isFinite(score) || score < 0 || score > Number(max);
+}
+
+function phoneIssue(value) {
+  if (!String(value || "").trim()) return "";
+  return localPhone(value) ? "" : "The phone number must be 10 digits and start with 07.";
 }
 
 function parentOf(student) {
   return student.guardians?.find((item) => item.isPrimary) || student.guardians?.[0];
 }
+
+const ROLE_LABEL = {
+  school_admin: "Director",
+  teacher: "Teacher",
+  dos: "Director of Studies",
+  discipline: "Discipline",
+  accountant: "Accountant",
+  super_admin: "Platform",
+};
 
 function tilesFor(session) {
   const role = session?.user?.role;
@@ -51,14 +94,15 @@ function tilesFor(session) {
       { id: "chat", group: "Overview", title: "Messages", hint: t("Reply, react, edit, delete, and see when a director has seen a message") },
       { id: "approvals", group: "Schools", title: t("Directors and schools"), hint: t("Create accounts, then approve, reject, activate or delete") },
       { id: "wallets", group: "Schools", title: t("Message wallets"), hint: t("Top up a school, set the messages left, and read earnings from sent messages") },
-      { id: "ads", group: "Platform", title: t("In-app ads"), hint: t("Publish, preview, suspend or remove ads") }
+      { id: "ads", group: "Platform", title: t("In-app ads"), hint: t("Publish, preview, suspend or remove ads") },
+      { id: "settings", group: "Platform", title: "Settings", hint: t("Change your name, email, phone and password.") }
     );
   }
   if (role === "school_admin") {
     tiles.push(
-      { id: "chat", group: "School", title: "Messages", hint: t("Reply, react, and chat with directors or IshuriApp") },
+      { id: "chat", group: "School", title: "Messages", hint: t("Chat with your staff, other directors, or IshuriApp.") },
       { id: "profile", group: "School", title: t("School profile"), hint: t("Create the profile and send it for approval") },
-      { id: "staff", group: "People", title: t("Staff accounts"), hint: t("Teachers and discipline officers, with email and password") }
+      { id: "staff", group: "People", title: t("Staff accounts"), hint: t("Teachers, discipline officers and accountants, with email and password") }
     );
     if (!isUni) {
       tiles.push(
@@ -69,32 +113,237 @@ function tilesFor(session) {
     tiles.push(
       { id: "publish", group: "School life", title: "Events", hint: t("Meetings, sports and scholarships") },
       { id: "sms", group: "School life", title: t("Send a message"), hint: t("Write a notice and send it to parent phones") },
-      { id: "analytics", group: "School life", title: t("Message analytics"), hint: t("Today, week, month and year, with paid and unpaid graphs") }
+      { id: "status", group: "People", title: "Student status", hint: t("See what each student was charged, what was paid, and what is still unpaid.") },
+      { id: "standing", group: "School", title: "Term Assessment Report", hint: t("Each subject shows its final mark for every assessment in the term.") },
+      { id: "summary", group: "School", title: "Summary report", hint: t("Choose a class and a subject. The sheet lists every assessment in the term.") },
+      ...(!isUni ? [{ id: "follow", group: "School", title: "Follow-up", hint: t("Students who attended and students who did not, with the reason.") }] : []),
+      { id: "analytics", group: "School life", title: t("Message analytics"), hint: t("Filter by date, term and message type, and see what was sent and what stayed unsent.") },
+      { id: "settings", group: "School", title: "Settings", hint: t("Change your name, email, phone and password.") }
     );
   }
   if (role === "teacher" && !isUni) {
     tiles.push(
       { id: "students", group: "My class", title: t("Register students"), hint: t("One parent phone receives every message") },
       { id: "marks", group: "My class", title: "Assessments", hint: t("Create an assessment in any class, save marks, and print the report") },
-      { id: "analytics", group: "My class", title: t("My messages"), hint: t("Messages you sent, by day, week, month, year, paid and unpaid") }
+      { id: "chat", group: "My class", title: "Messages", hint: t("Chat with the staff at your school.") }
+    );
+  }
+  if (role === "teacher") {
+    tiles.push(
+      { id: "settings", group: "My class", title: "Settings", hint: t("Change your name, email, phone and password.") }
+    );
+  }
+  if (role === "dos" && !isUni) {
+    tiles.push(
+      { id: "studies", group: "Studies", title: "Director of Studies", hint: t("See every teacher's assessments, open the marks reports, and send one monthly summary to parents.") },
+      { id: "chat", group: "Studies", title: "Messages", hint: t("Chat with the staff at your school.") },
+      { id: "settings", group: "Studies", title: "Settings", hint: t("Change your name, email, phone and password.") }
     );
   }
   if (role === "discipline") {
     tiles.push(
-      { id: "discipline", group: "Discipline", title: t("Discipline report"), hint: t("Scores, cases, and a printable report by date and student") },
-      { id: "analytics", group: "Discipline", title: t("My messages"), hint: t("Discipline texts you sent, with paid and unpaid totals") }
+      { id: "discipline", group: "Discipline", title: t("Discipline cases"), hint: t("Scores, cases, and a printable report by date and student") },
+      { id: "analytics", group: "Discipline", title: t("My messages"), hint: t("Discipline texts you sent, with sent and unsent totals.") },
+      { id: "chat", group: "Discipline", title: "Messages", hint: t("Chat with the staff at your school.") },
+      { id: "settings", group: "Discipline", title: "Settings", hint: t("Change your name, email, phone and password.") }
+    );
+  }
+  if (role === "accountant") {
+    tiles.push(
+      { id: "books", group: "Books", title: "Accountant portal", hint: "Set the school fees and the material items. Record the amount paid. The unpaid amount is shown for you." },
+      { id: "chat", group: "Books", title: "Messages", hint: t("Chat with the staff at your school.") },
+      { id: "analytics", group: "Books", title: t("My messages"), hint: t("Student status, reminders and special messages you sent, with the school fees and the unpaid totals.") },
+      { id: "settings", group: "Books", title: "Settings", hint: t("Change your name, email, phone and password.") }
     );
   }
   return tiles;
 }
 
+function RwandaFlag() {
+  return (
+    <svg className="acct-flag" viewBox="0 0 24 16" aria-hidden="true">
+      <rect width="24" height="16" rx="2" fill="#00A1DE" />
+      <rect y="6.2" width="24" height="4.6" fill="#FAD201" />
+      <rect y="10.8" width="24" height="5.2" fill="#20603D" />
+      <circle cx="19" cy="3.6" r="1.5" fill="#FAD201" />
+    </svg>
+  );
+}
+
+function DashLang() {
+  const lang = useLanguage();
+  const [open, setOpen] = useState(false);
+  const code = { en: "EN", rw: "RW", sw: "SW", fr: "FR" }[lang] || "EN";
+  return (
+    <div className="acct-lang">
+      <button type="button" aria-label={t("Language")} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+        <RwandaFlag />
+        <span>{code}</span>
+        <Icon name="chevron" />
+      </button>
+      {open ? (
+        <ul>
+          {LANGS.map((item) => (
+            <li key={item.id}>
+              <button type="button" onClick={() => { setLanguage(item.id); setOpen(false); }}>{item.label}</button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
+function accountInitials(name) {
+  const words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  const letters = words.length >= 2 ? `${words[0][0]}${words[1][0]}` : (words[0] || "A").slice(0, 2);
+  return letters.toUpperCase();
+}
+
+function Mark({ src, letters, className }) {
+  const [failed, setFailed] = useState(false);
+  const photo = !failed && src ? media(src) : "";
+  if (photo) return <img className={className} src={photo} alt="" onError={() => setFailed(true)} />;
+  return <span className={className} aria-hidden="true"><b>{letters}</b></span>;
+}
+
+function DashUser({ user, onSignOut, onSettings, roleLabel = "Accountant" }) {
+  const [open, setOpen] = useState(false);
+  const name = user?.fullName || t(roleLabel);
+  return (
+    <div className="acct-user">
+      <button type="button" aria-expanded={open} onClick={() => setOpen((value) => !value)}>
+        <Mark className="acct-avatar" src={user?.avatarUrl} letters={accountInitials(name)} />
+        <span>
+          <strong>{name}</strong>
+          <em>{t(roleLabel)}</em>
+        </span>
+        <Icon name="chevron" />
+      </button>
+      {open ? (
+        <ul>
+          <li><button type="button" onClick={() => { setOpen(false); onSettings(); }}><Icon name="gear" />{t("Settings")}</button></li>
+          <li><button type="button" onClick={onSignOut}><Icon name="door" />{t("Log out")}</button></li>
+        </ul>
+      ) : null}
+    </div>
+  );
+}
+
 export function Workspace({ session, section, onSignOut, onSession }) {
+  useLanguage();
   const tiles = tilesFor(session);
   const allowed = new Set(tiles.map((tile) => tile.id));
-  const sectionId = String(section || "home").split("/")[0] || "home";
-  const peerId = String(section || "").split("/")[1] || "";
+  const sectionParts = String(section || "home").split("/").filter(Boolean);
+  const sectionId = sectionParts[0] || "home";
+  const peerId = sectionParts.slice(1).join("/");
   const current = sectionId !== "home" && allowed.has(sectionId) ? sectionId : "home";
-  const canChat = session?.user?.role === "school_admin" || session?.user?.role === "super_admin";
+  const [feeDesk, setFeeDesk] = useState({ items: [], classes: [], rooms: [], roster: [] });
+  const [teachDesk, setTeachDesk] = useState({ ready: false, classes: [], roster: [], assessments: [] });
+  const [homeDesk, setHomeDesk] = useState({ ready: false, students: [], classes: [], staff: [], events: [], assessments: [], cases: [], platform: null });
+  const [night, setNight] = useState(() => {
+    try { return localStorage.getItem("ishuri.acct.theme") === "night"; } catch { return false; }
+  });
+  const publishFeeItems = useCallback((desk) => setFeeDesk((currentDesk) => ({
+    ...currentDesk,
+    items: desk?.items || [],
+    classes: desk?.classes || [],
+  })), []);
+  useEffect(() => {
+    const role = session?.user?.role;
+    if (!role) return undefined;
+    document.body.classList.add("acct-live");
+    return () => document.body.classList.remove("acct-live");
+  }, [session?.user?.role]);
+  useEffect(() => {
+    if (session?.user?.role !== "accountant" || !session?.token) return undefined;
+    let cancel = false;
+    Promise.all([
+      api("/accounts/ledger", { token: session.token }),
+      api("/academics/classes", { token: session.token }),
+      api("/students", { token: session.token }),
+    ]).then(([book, rooms, people]) => {
+      if (cancel) return;
+      setFeeDesk((currentDesk) => ({
+        ...currentDesk,
+        items: accountantNav(book.accounts),
+        classes: (rooms.items || []).map((room) => ({ id: room._id, name: room.name })),
+        rooms: rooms.items || [],
+        roster: people.items || [],
+      }));
+    }).catch(() => {});
+    return () => { cancel = true; };
+  }, [session?.token, session?.user?.role]);
+  useEffect(() => {
+    if (session?.user?.role !== "teacher" || session?.school?.type === "university" || !session?.token) return undefined;
+    let cancel = false;
+    Promise.all([
+      api("/academics/classes", { token: session.token }),
+      api("/students", { token: session.token }),
+      api("/marks/assessments", { token: session.token }),
+    ]).then(([rooms, people, sheet]) => {
+      if (cancel) return;
+      setTeachDesk({
+        ready: true,
+        classes: rooms.items || [],
+        roster: people.items || [],
+        assessments: sheet.items || [],
+      });
+    }).catch(() => { if (!cancel) setTeachDesk((currentDesk) => ({ ...currentDesk, ready: true })); });
+    return () => { cancel = true; };
+  }, [session?.token, session?.user?.role, session?.school?.type]);
+  useEffect(() => {
+    const role = session?.user?.role;
+    const university = session?.school?.type === "university";
+    if (!session?.token || role === "accountant" || role === "teacher") return undefined;
+    let cancel = false;
+    const token = session.token;
+    const finish = (patch) => { if (!cancel) setHomeDesk((currentDesk) => ({ ...currentDesk, ready: true, ...patch })); };
+    const fail = () => { if (!cancel) setHomeDesk((currentDesk) => ({ ...currentDesk, ready: true })); };
+    if (role === "super_admin") {
+      api("/admin/presence", { token }).then((data) => finish({ platform: data })).catch(fail);
+    } else if (role === "school_admin") {
+      const calls = [api("/staff", { token }), api("/content/events", { token })];
+      if (!university) calls.push(api("/students", { token }), api("/academics/classes", { token }));
+      Promise.all(calls).then((pages) => {
+        const [people, posted, students, rooms] = pages;
+        finish({
+          staff: people.items || [],
+          events: posted.items || [],
+          students: students?.items || [],
+          classes: rooms?.items || [],
+        });
+      }).catch(fail);
+    } else if (role === "dos") {
+      Promise.all([
+        api("/academics/classes", { token }),
+        api("/marks/assessments", { token }),
+      ]).then(([rooms, sheet]) => finish({ classes: rooms.items || [], assessments: sheet.items || [] })).catch(fail);
+    } else if (role === "discipline") {
+      Promise.all([
+        api("/discipline", { token }),
+        api("/academics/classes", { token }),
+        api("/students", { token }),
+      ]).then(([cases, rooms, people]) => finish({
+        cases: cases.items || [],
+        classes: rooms.items || [],
+        students: people.items || [],
+      })).catch(fail);
+    } else finish({});
+    return () => { cancel = true; };
+  }, [session?.token, session?.user?.role, session?.school?.type]);
+  useEffect(() => {
+    if (!session?.user?.role) return undefined;
+    function onKey(event) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        document.querySelector(".acct-bar .acct-search input")?.focus();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [session?.user?.role]);
+  const canChat = ["school_admin", "super_admin", "accountant", "teacher", "dos", "discipline"].includes(session?.user?.role);
   const inbox = useChatInbox(session?.token, canChat);
   usePresence(session?.token);
 
@@ -111,55 +360,288 @@ export function Workspace({ session, section, onSignOut, onSession }) {
     );
   }
 
-  const superHome = session.user?.role === "super_admin" && current === "home";
+  const role = session.user?.role;
+  const university = session.school?.type === "university";
+  const accountant = role === "accountant";
+  const teacher = role === "teacher";
+  const teachMarks = teacher && !university;
+  const shell = true;
+  const roleLabel = ROLE_LABEL[role] || "Director";
+  const brandName = session.school?.name || (role === "super_admin" ? "IshuriApp" : session.user?.fullName);
+  const studentSearch = accountant || teachMarks || (role === "school_admin" && !university) || role === "discipline";
+  const searchRoster = accountant ? feeDesk.roster : teacher ? teachDesk.roster : homeDesk.students;
+  const searchClasses = accountant ? feeDesk.rooms : teacher ? teachDesk.classes : homeDesk.classes;
+  const textRows = role === "dos"
+    ? homeDesk.assessments.map((item) => ({
+      id: item._id,
+      title: item.title || t("Assessments"),
+      detail: [item.classRoom?.name, item.subject?.name].filter(Boolean).join(" · "),
+      href: "#/desk/studies",
+    }))
+    : role === "super_admin"
+      ? (homeDesk.platform?.items || []).map((item) => ({
+        id: item.id,
+        title: item.name,
+        detail: `${item.staff || 0} ${t("Staff")}`,
+        href: "#/desk/approvals",
+      }))
+      : [];
+  const bellChat = !allowed.has("analytics");
+  const brandWords = String(brandName || "").trim().split(/\s+/).filter(Boolean);
+  const brandMark = (brandWords.length >= 2 ? `${brandWords[0][0]}${brandWords[1][0]}` : (brandWords[0] || "IS").slice(0, 2)).toUpperCase();
   return (
-    <div className={`page${current === "chat" ? " chat-page" : ""}`}>
-      <header className={`page-head${canChat && !superHome ? " has-bell" : ""}${current === "home" ? " is-overview" : ""}`}>
-        <div>
-          <p className="kicker">{current === "home" ? <Icon name="home" /> : null}{(session.user?.role || "").replaceAll("_", " ")}</p>
-          <h1>{session.school?.name || session.user?.fullName}</h1>
-          <p className="lede">
-            {session.school
-              ? `${session.school.name} · ${String(session.school.status || "").replaceAll("_", " ")}`
-              : "Sign in, then follow the steps for your role."}
-          </p>
-          {session.school?.status === "pending_review" ? <p>{t("Your school is under IshuriApp review. It is not public yet.")}</p> : null}
-          {session.school?.status === "rejected" ? <p>Application was returned: {session.school.rejectionReason}</p> : null}
-          {session.school?.type === "university" ? <p className="muted">{t("Universities publish events and scholarships. Class marks stay with primary, secondary and TVET schools.")}</p> : null}
+    <div className={`page${current === "chat" ? " chat-page" : ""}${shell ? " is-accountant" : ""}${night ? " is-night" : ""}`}>
+      <header className="acct-bar">
+        <div className="acct-brand">
+          <Mark className="acct-logo" src={session.school?.logoUrl} letters={brandMark} />
+          <div>
+            <strong>{brandName}</strong>
+            <span>{t(roleLabel)}</span>
+          </div>
         </div>
-        {superHome ? <MessageSaleGraphic /> : current === "home" ? <OverviewGraphic /> : null}
-        {canChat && !superHome ? <MessageBell inbox={inbox} activePeer={current === "chat" ? peerId : ""} onOpen={openChat} /> : null}
-      </header>
-      {session.user?.role === "school_admin" && current !== "chat" ? <SchoolAdminReach /> : null}
-      <div className="work">
-        <aside className="work-nav panel">
-          <button className={current === "home" ? "on" : ""} onClick={() => go("#/desk")}><Icon name="home" />{t("Overview")}</button>
-          {tiles.map((tile) => (
-            <button key={tile.id} className={current === tile.id ? "on" : ""} onClick={() => go(`#/desk/${tile.id}`)}>
-              <Icon name={TILE_ICON[tile.id] || "school"} />
-              <span>{t(tile.title)}</span>
-              {tile.id === "chat" && inbox?.unread ? <b className="nav-alert">{inbox.unread > 9 ? "9+" : inbox.unread}</b> : null}
+        <div className="acct-bar-main">
+          <div className="acct-search">
+            {studentSearch ? (
+              <StudentSearch
+                roster={searchRoster}
+                classes={searchClasses}
+                placeholder={t("Search a student")}
+                onPick={(student) => go(accountant ? `#/desk/books/student/${student._id}` : role === "discipline" ? "#/desk/discipline" : "#/desk/students")}
+              />
+            ) : textRows.length || role === "dos" || role === "super_admin" ? (
+              <DeskSearch
+                rows={textRows}
+                placeholder={role === "super_admin" ? t("Search a school") : t("Search an assessment")}
+                onPick={(row) => go(row.href)}
+              />
+            ) : null}
+          </div>
+          <div className="acct-tools">
+            <button type="button" className="acct-icon-btn" aria-pressed={night} aria-label={night ? t("Light") : t("Dark")} onClick={() => setNight((value) => {
+              const next = !value;
+              try { localStorage.setItem("ishuri.acct.theme", next ? "night" : "day"); } catch { /* The choice stays for this visit. */ }
+              return next;
+            })}>
+              <Icon name={night ? "moon" : "sun"} />
             </button>
+            <button type="button" className="acct-icon-btn" aria-label={bellChat ? t("Messages") : t("My messages")} onClick={() => go(bellChat ? "#/desk/chat" : "#/desk/analytics")}>
+              <Icon name="bell" />
+              {bellChat && inbox?.unread ? <b className="nav-alert">{inbox.unread > 9 ? "9+" : inbox.unread}</b> : null}
+            </button>
+            <DashLang />
+            <DashUser user={session.user} roleLabel={roleLabel} onSignOut={onSignOut} onSettings={() => go("#/desk/settings")} />
+          </div>
+        </div>
+      </header>
+      <div className="work is-accountant">
+        <aside className="work-nav panel">
+          <button className={current === "home" ? "on" : ""} onClick={() => go("#/desk")}><Icon name="home" />{t("Dashboard")}</button>
+          {tiles.map((tile) => (
+            <Fragment key={tile.id}>
+              <button className={current === tile.id && !(tile.id === "books" && peerId) && !(tile.id === "marks" && peerId) && !(tile.id === "studies" && peerId) && !(tile.id === "discipline" && peerId) ? "on" : ""} onClick={() => go(`#/desk/${tile.id}`)}>
+                <Icon name={TILE_ICON[tile.id] || "school"} />
+                <span>{t(tile.title)}</span>
+                {tile.id === "chat" && inbox?.unread ? <b className="nav-alert">{inbox.unread > 9 ? "9+" : inbox.unread}</b> : null}
+              </button>
+              {tile.id === "marks" ? (
+                <>
+                  <button className={current === "marks" && peerId === "summary" ? "on" : ""} onClick={() => go("#/desk/marks/summary")}>
+                    <Icon name="award" />
+                    <span>{t("Summary report")}</span>
+                  </button>
+                  <button className={current === "marks" && peerId === "credits" ? "on" : ""} onClick={() => go("#/desk/marks/credits")}>
+                    <Icon name="book" />
+                    <span>{t("Credited marks")}</span>
+                  </button>
+                  <button className={current === "marks" && peerId === "examination" ? "on" : ""} onClick={() => go("#/desk/marks/examination")}>
+                    <Icon name="graduate" />
+                    <span>{t("Examination")}</span>
+                  </button>
+                  <button className={current === "marks" && peerId === "follow" ? "on" : ""} onClick={() => go("#/desk/marks/follow")}>
+                    <Icon name="check" />
+                    <span>{t("Follow-up")}</span>
+                  </button>
+                </>
+              ) : null}
+              {tile.id === "books" && session.user?.role === "accountant" ? (
+                <>
+                  {feeDesk.classes.map((room) => {
+                    const open = current === "books" && (peerId === `class/${room.id}` || peerId.startsWith(`class/${room.id}/`));
+                    return (
+                      <Fragment key={room.id}>
+                        <button type="button" className={`nav-sub${open ? " on" : ""}`} onClick={() => go(`#/desk/books/class/${room.id}`)}>
+                          <Icon name="graduate" />
+                          <span>{room.name}</span>
+                        </button>
+                        {open ? (
+                          <>
+                            <button type="button" className={`nav-sub is-deep${peerId.startsWith(`class/${room.id}/pay`) ? " on" : ""}`} onClick={() => go(`#/desk/books/class/${room.id}/pay`)}>
+                              <Icon name="coins" />
+                              <span>{t("Record payment")}</span>
+                            </button>
+                            <button type="button" className={`nav-sub is-deep${peerId === `class/${room.id}/report` ? " on" : ""}`} onClick={() => go(`#/desk/books/class/${room.id}/report`)}>
+                              <Icon name="award" />
+                              <span>{t("Class sheet")}</span>
+                            </button>
+                          </>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
+                  <button type="button" className={`nav-sub${current === "books" && (peerId === "fees" || peerId.startsWith("fees/")) ? " on" : ""}`} onClick={() => go("#/desk/books/fees")}>
+                    <Icon name="receipt" />
+                    <span>{t("School fees")}</span>
+                  </button>
+                  <button type="button" className={`nav-sub${current === "books" && (peerId === "materials" || peerId.startsWith("materials/")) ? " on" : ""}`} onClick={() => go("#/desk/books/materials")}>
+                    <Icon name="book" />
+                    <span>{t("School materials")}</span>
+                  </button>
+                  <button type="button" className={`nav-sub${current === "books" && peerId === "income" ? " on" : ""}`} onClick={() => go("#/desk/books/income")}>
+                    <Icon name="chart" />
+                    <span>{t("Income")}</span>
+                  </button>
+                  <button type="button" className={`nav-sub${current === "books" && peerId === "another" ? " on" : ""}`} onClick={() => go("#/desk/books/another")}>
+                    <Icon name="wallet" />
+                    <span>{t("Another income")}</span>
+                  </button>
+                  <button type="button" className={`nav-sub${current === "books" && peerId === "expenses" ? " on" : ""}`} onClick={() => go("#/desk/books/expenses")}>
+                    <Icon name="coins" />
+                    <span>{t("Expenses")}</span>
+                  </button>
+                  <button type="button" className={`nav-sub${current === "books" && peerId === "status" ? " on" : ""}`} onClick={() => go("#/desk/books/status")}>
+                    <Icon name="people" />
+                    <span>{t("Student status")}</span>
+                  </button>
+                </>
+              ) : null}
+              {tile.id === "discipline" ? (
+                <button type="button" className={`nav-sub${current === "discipline" && peerId === "annual" ? " on" : ""}`} onClick={() => go("#/desk/discipline/annual")}>
+                  <Icon name="award" />
+                  <span>{t("Annual discipline report")}</span>
+                </button>
+              ) : null}
+              {tile.id === "studies" ? (
+                <>
+                  <button className={current === "studies" && peerId === "summary" ? "on" : ""} onClick={() => go("#/desk/studies/summary")}>
+                    <Icon name="award" />
+                    <span>{t("Summary report")}</span>
+                  </button>
+                  <button className={current === "studies" && peerId === "midterm" ? "on" : ""} onClick={() => go("#/desk/studies/midterm")}>
+                    <Icon name="pen" />
+                    <span>{t("Mid Term Tests Report")}</span>
+                  </button>
+                  <button className={current === "studies" && peerId === "term" ? "on" : ""} onClick={() => go("#/desk/studies/term")}>
+                    <Icon name="book" />
+                    <span>{t("Term Assessment Report")}</span>
+                  </button>
+                  <button className={current === "studies" && peerId === "credits" ? "on" : ""} onClick={() => go("#/desk/studies/credits")}>
+                    <Icon name="book" />
+                    <span>{t("Credit report")}</span>
+                  </button>
+                  <button className={current === "studies" && peerId === "examination" ? "on" : ""} onClick={() => go("#/desk/studies/examination")}>
+                    <Icon name="graduate" />
+                    <span>{t("Examination")}</span>
+                  </button>
+                  <button className={current === "studies" && peerId === "follow" ? "on" : ""} onClick={() => go("#/desk/studies/follow")}>
+                    <Icon name="check" />
+                    <span>{t("Follow-up")}</span>
+                  </button>
+                </>
+              ) : null}
+            </Fragment>
           ))}
+          {shell ? (
+            <button type="button" className={`acct-side-user${current === "settings" ? " on" : ""}`} onClick={() => go("#/desk/settings")}>
+              <Mark className="acct-avatar" src={session.user?.avatarUrl} letters={accountInitials(session.user?.fullName)} />
+              <div>
+                <strong>{session.user?.fullName}</strong>
+                <span>{t(roleLabel)}</span>
+              </div>
+            </button>
+          ) : null}
           <button onClick={onSignOut}><Icon name="door" />{t("Log out")}</button>
         </aside>
         <div>
-          {current === "home" && session.user?.role === "super_admin" ? <PlatformPulse token={session.token} /> : null}
-          {current === "home" && <HomeTiles tiles={tiles} unread={inbox?.unread || 0} />}
+          {role === "school_admin" && current !== "chat" ? <SchoolAdminReach /> : null}
+          {role === "school_admin" && session.school?.status === "pending_review" ? <p className="muted hint-line">{t("Your school is under IshuriApp review. It is not public yet.")}</p> : null}
+          {role === "school_admin" && session.school?.status === "rejected" ? <p className="muted hint-line">{t("Application was returned")}: {session.school.rejectionReason}</p> : null}
+          {role === "school_admin" && university ? <p className="muted hint-line">{t("Universities publish events and scholarships. Class marks stay with primary, secondary and TVET schools.")}</p> : null}
+          {current === "home" && role === "super_admin" ? (
+            homeDesk.ready
+              ? <PlatformBoard userName={session.user?.fullName} data={homeDesk.platform} />
+              : <DeskLoading title={t("Opening the desk")} text={t("Your desk is on the way.")} />
+          ) : null}
+          {current === "home" && role === "school_admin" ? (
+            homeDesk.ready
+              ? <DirectorBoard userName={session.user?.fullName} students={homeDesk.students} classes={homeDesk.classes} staff={homeDesk.staff} events={homeDesk.events} university={university} />
+              : <DeskLoading title={t("Opening the desk")} text={t("Your desk is on the way.")} />
+          ) : null}
+          {current === "home" && role === "dos" ? (
+            homeDesk.ready
+              ? <StudiesBoard userName={session.user?.fullName} classes={homeDesk.classes} assessments={homeDesk.assessments} />
+              : <DeskLoading title={t("Opening the desk")} text={t("Your desk is on the way.")} />
+          ) : null}
+          {current === "home" && role === "discipline" ? (
+            homeDesk.ready
+              ? <DisciplineBoard userName={session.user?.fullName} students={homeDesk.students} classes={homeDesk.classes} cases={homeDesk.cases} />
+              : <DeskLoading title={t("Opening the desk")} text={t("Your desk is on the way.")} />
+          ) : null}
+          {current === "home" && accountant ? <AccountantPortal token={session.token} school={session.school} userName={session.user?.fullName} viewId="" onItems={publishFeeItems} /> : null}
+          {current === "home" && teachMarks && teachDesk.ready ? (
+            <div className="acct-board">
+              <TeacherBoard userName={session.user?.fullName} classes={teachDesk.classes} roster={teachDesk.roster} assessments={teachDesk.assessments} />
+            </div>
+          ) : null}
+          {current === "home" && teachMarks && !teachDesk.ready ? (
+            <div className="acct-load">
+              <div className="acct-load-card">
+                <span className="loader-ring" />
+                <strong>{t("Opening your classes")}</strong>
+                <p>{t("Your assessments are on the way.")}</p>
+              </div>
+            </div>
+          ) : null}
+          {current === "home" && teacher && !teachMarks ? (
+            <QuietBoard
+              userName={session.user?.fullName}
+              roleLabel={roleLabel}
+              welcome="Here is your class work for this period."
+              actions={[
+                { href: "#/desk/chat", icon: "chat", label: "Messages" },
+                { href: "#/desk/settings", icon: "gear", label: "Settings" },
+              ]}
+            />
+          ) : null}
           {current === "students" && <Students token={session.token} />}
           {current === "staff" && <StaffDesk token={session.token} />}
           {current === "classes" && <Classes token={session.token} />}
-          {current === "marks" && <Marks token={session.token} school={session.school} />}
-          {current === "discipline" && <Discipline token={session.token} school={session.school} />}
+          {current === "marks" && peerId === "follow" ? <FollowUp token={session.token} school={session.school} /> : null}
+          {current === "marks" && peerId !== "follow" ? <Marks token={session.token} school={session.school} view={peerId} /> : null}
+          {current === "studies" && !peerId && (
+            <Studies token={session.token} school={session.school} view="home">
+              <Marks token={session.token} school={session.school} view="reports" reportsOnly />
+            </Studies>
+          )}
+          {current === "studies" && (peerId === "midterm" || peerId === "term") ? <Studies token={session.token} school={session.school} view={peerId} /> : null}
+          {current === "studies" && peerId === "follow" ? <FollowUp token={session.token} school={session.school} /> : null}
+          {current === "studies" && peerId && peerId !== "midterm" && peerId !== "term" && peerId !== "follow" ? <Marks token={session.token} school={session.school} view={peerId} reportsOnly /> : null}
+          {current === "discipline" && peerId === "annual" ? <DisciplineStanding token={session.token} school={session.school} /> : null}
+          {current === "discipline" && peerId !== "annual" ? <Discipline token={session.token} school={session.school} /> : null}
           {current === "profile" && <Profile session={session} onSession={onSession} />}
           {current === "publish" && <Publish token={session.token} school={session.school} />}
           {current === "sms" && <Messages token={session.token} role={session.user?.role} school={session.school} />}
-          {current === "analytics" && <MessageAnalytics token={session.token} role={session.user?.role} />}
+          {current === "analytics" && <MessageAnalytics token={session.token} role={session.user?.role} school={session.school} />}
           {current === "reports" && <Reports token={session.token} />}
           {current === "approvals" && <Approvals token={session.token} />}
           {current === "wallets" && <MessageWallets token={session.token} />}
           {current === "ads" && <Ads token={session.token} />}
+          {current === "books" && session.user?.role === "accountant" ? <AccountantPortal token={session.token} school={session.school} userName={session.user?.fullName} viewId={peerId} onItems={publishFeeItems} /> : null}
+          {current === "status" && role === "school_admin" ? <AccountantPortal token={session.token} school={session.school} userName={session.user?.fullName} viewId="status" watch /> : null}
+          {current === "standing" && role === "school_admin" ? <Studies token={session.token} school={session.school} view="term" /> : null}
+          {current === "summary" && role === "school_admin" ? <Marks token={session.token} school={session.school} view="summary" reportsOnly /> : null}
+          {current === "follow" && role === "school_admin" ? <FollowUp token={session.token} school={session.school} /> : null}
           {current === "chat" && <LiveChat token={session.token} peerId={peerId} inbox={inbox} onInbox={inbox.reload} onOpen={openChat} />}
+          {current === "settings" && shell ? <AccountantSettings session={session} onSession={onSession} /> : null}
         </div>
       </div>
     </div>
@@ -172,7 +654,7 @@ function usePresence(token) {
     let stop = false;
     const ping = () => {
       if (stop || document.hidden) return;
-      api("/auth/presence", { method: "POST", token }).catch(() => {});
+      api("/auth/presence", { method: "POST", token, quiet: true }).catch(() => {});
     };
     ping();
     const timer = window.setInterval(ping, 25000);
@@ -185,110 +667,6 @@ function usePresence(token) {
   }, [token]);
 }
 
-const STAFF_LABELS = { school_admin: "Directors", teacher: "Teachers", discipline: "Discipline", accountant: "Accountants" };
-
-function PlatformPulse({ token }) {
-  const [data, setData] = useState(null);
-  useEffect(() => {
-    let stop = false;
-    let told = false;
-    const load = () => {
-      api("/admin/presence", { token })
-        .then((next) => { if (!stop) setData(next); })
-        .catch((err) => {
-          if (stop || told) return;
-          told = true;
-          notify(t("Not completed"), err.message, "bad");
-        });
-    };
-    load();
-    const timer = window.setInterval(load, 15000);
-    return () => { stop = true; window.clearInterval(timer); };
-  }, [token]);
-  const staffLine = Object.entries(STAFF_LABELS)
-    .filter(([role]) => data?.staffByRole?.[role])
-    .map(([role, label]) => `${label} ${data.staffByRole[role]}`)
-    .join(" · ");
-  const trend = data?.trend?.length > 1 ? data.trend : (data?.trend || []).flatMap((point) => [point, point]);
-  const staffBars = (data?.items || [])
-    .map((item) => ({ ...item, name: item.name.length > 22 ? `${item.name.slice(0, 20)}…` : item.name }))
-    .sort((a, b) => b.staff - a.staff || a.name.localeCompare(b.name));
-  const maxOnline = Math.max(1, ...(data?.items || []).map((item) => item.online));
-  const onlineShare = data?.schools ? Math.round((data.onlineSchools / data.schools) * 100) : 0;
-  return (
-    <section className="sections">
-      <article className="chart-card pulse-card">
-        <header className="assess-head">
-          <span className="assess-mark"><Icon name="school" /></span>
-          <div>
-            <h2>{t("Schools and staff")}</h2>
-            <p className="muted">{data ? `${data.schools} schools · ${data.staff} staff${staffLine ? ` · ${staffLine}` : ""}` : "Checking the register…"}</p>
-          </div>
-        </header>
-        <div className="pulse-chart" role="img" aria-label={data ? `${data.schools} schools and ${data.staff} staff over time` : "Schools and staff trend"}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={trend}>
-              <defs>
-                <linearGradient id="schoolsFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1565C0" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="#1565C0" stopOpacity={0.04} />
-                </linearGradient>
-                <linearGradient id="staffFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#4FC3F7" stopOpacity={0.7} />
-                  <stop offset="100%" stopColor="#4FC3F7" stopOpacity={0.05} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="#e3f2fd" vertical={false} />
-              <XAxis dataKey="label" tick={{ fill: "#5b7390", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis allowDecimals={false} tick={{ fill: "#5b7390", fontSize: 11 }} axisLine={false} tickLine={false} width={32} />
-              <Tooltip />
-              <Legend />
-              <Area type="monotone" name="Schools" dataKey="schools" stroke="#0D47A1" strokeWidth={3} fill="url(#schoolsFill)" isAnimationActive animationDuration={800} />
-              <Area type="monotone" name="Staff" dataKey="staff" stroke="#0288D1" strokeWidth={3} fill="url(#staffFill)" isAnimationActive animationDuration={800} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-        <h2><Icon name="people" />{t("Staff in each school")}</h2>
-        <div className="pulse-chart bars" role="img" aria-label={t("Staff in each school")}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={staffBars} layout="vertical" margin={{ left: 8, right: 8, top: 4, bottom: 0 }}>
-              <CartesianGrid stroke="#e3f2fd" horizontal={false} />
-              <XAxis type="number" allowDecimals={false} tick={{ fill: "#5b7390", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" width={128} tick={{ fill: "#0a2540", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip />
-              <Legend />
-              <Bar name="Directors" dataKey="directors" stackId="staff" fill="#0D47A1" isAnimationActive animationDuration={800} />
-              <Bar name="Teachers" dataKey="teachers" stackId="staff" fill="#1565C0" isAnimationActive animationDuration={800} />
-              <Bar name="Discipline" dataKey="discipline" stackId="staff" fill="#4FC3F7" radius={staffBars.some((item) => item.accountants) ? undefined : [0, 6, 6, 0]} isAnimationActive animationDuration={800} />
-              {staffBars.some((item) => item.accountants) ? <Bar name="Accountants" dataKey="accountants" stackId="staff" fill="#90CAF9" radius={[0, 6, 6, 0]} isAnimationActive animationDuration={800} /> : null}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </article>
-      <article className="chart-card pulse-card">
-        <header className="assess-head">
-          <span className="assess-mark"><Icon name="bolt" /></span>
-          <div>
-            <h2>{t("Schools online now")}</h2>
-            <p className="muted">{t("A school is online while one of its staff has IshuriApp open. The count clears about 90 seconds after they leave.")}</p>
-          </div>
-        </header>
-        <div className="split-bar" role="img" aria-label={data ? `${data.onlineSchools} schools online, ${data.offlineSchools} offline` : "Online schools"}>
-          <i style={{ width: `${onlineShare}%`, background: "#2E7D32" }} />
-          <i style={{ width: `${100 - onlineShare}%`, background: "#e7eef5" }} />
-        </div>
-        <p className="muted">{data ? `${data.onlineSchools} online · ${data.offlineSchools} offline · ${data.onlinePeople} staff on IshuriApp` : "Checking who is online…"}</p>
-        {(data?.items || []).map((item) => (
-          <div key={item.id} className="pulse-school">
-            <p className="pulse-school-name"><Icon name={item.online ? "bolt" : "building"} /><strong>{item.name}</strong> <span>{item.online ? `${item.online} online` : "Offline"}</span></p>
-            <div className="track"><div className="fill live" style={{ width: item.online ? `${(item.online / maxOnline) * 100}%` : "0%" }} /></div>
-            {item.online ? <p className="muted">{item.people.map((person) => person.fullName).join(", ")}</p> : null}
-          </div>
-        ))}
-      </article>
-    </section>
-  );
-}
 
 function SchoolAdminReach() {
   return (
@@ -312,78 +690,8 @@ const GROUP_ICON = {
   "School life": "calendar",
   "My class": "graduate",
   Discipline: "scale",
+  Books: "coins",
 };
-
-function MessageSaleGraphic() {
-  return (
-    <svg className="overview-crest sale-crest" viewBox="0 0 360 160" role="img" aria-label={t("Super admin selling messages to schools")}>
-      <rect x="6" y="8" width="348" height="144" rx="24" fill="#e3f2fd" />
-      <rect x="16" y="22" width="108" height="116" rx="18" fill="#ffffff" />
-      <circle cx="70" cy="58" r="16" fill="#0D47A1" />
-      <path d="M46 108c3-20 12-30 24-30s21 10 24 30" fill="#1565C0" />
-      <text x="70" y="126" textAnchor="middle" fill="#0D47A1" fontSize="11" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("Super admin")}</text>
-      <g className="sale-pack">
-        <rect x="98" y="66" width="42" height="26" rx="8" fill="#0D47A1" />
-        <text x="119" y="83" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </g>
-      <path className="sale-flow" d="M146 80 H214" />
-      <path d="M206 74l10 6-10 6" fill="none" stroke="#1565C0" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <g className="sale-pack late">
-        <rect x="158" y="52" width="40" height="24" rx="8" fill="#1565C0" />
-        <text x="178" y="68" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </g>
-      <g className="sale-pack later">
-        <rect x="168" y="92" width="40" height="24" rx="8" fill="#0288D1" />
-        <text x="188" y="108" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </g>
-      <g>
-        <rect x="228" y="28" width="56" height="78" rx="12" fill="#0D47A1" />
-        <path d="M228 46h56" stroke="#4FC3F7" strokeWidth="3" />
-        <rect x="238" y="54" width="12" height="10" rx="2" fill="#ffffff" />
-        <rect x="256" y="54" width="12" height="10" rx="2" fill="#ffffff" />
-        <rect x="238" y="70" width="12" height="10" rx="2" fill="#90CAF9" />
-        <rect x="256" y="70" width="12" height="10" rx="2" fill="#90CAF9" />
-        <rect x="236" y="86" width="40" height="14" rx="7" fill="#ffffff" />
-        <text x="256" y="97" textAnchor="middle" fill="#0D47A1" fontSize="8" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </g>
-      <text x="256" y="124" textAnchor="middle" fill="#0D47A1" fontSize="11" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("School")}</text>
-      <g>
-        <rect x="292" y="28" width="56" height="78" rx="12" fill="#1565C0" />
-        <path d="M292 46h56" stroke="#4FC3F7" strokeWidth="3" />
-        <rect x="302" y="54" width="12" height="10" rx="2" fill="#ffffff" />
-        <rect x="320" y="54" width="12" height="10" rx="2" fill="#ffffff" />
-        <rect x="302" y="70" width="12" height="10" rx="2" fill="#90CAF9" />
-        <rect x="320" y="70" width="12" height="10" rx="2" fill="#90CAF9" />
-        <rect x="300" y="86" width="40" height="14" rx="7" fill="#ffffff" />
-        <text x="320" y="97" textAnchor="middle" fill="#1565C0" fontSize="8" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </g>
-      <text x="320" y="124" textAnchor="middle" fill="#1565C0" fontSize="11" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("School")}</text>
-    </svg>
-  );
-}
-
-function OverviewGraphic() {
-  return (
-    <svg className="overview-crest" viewBox="0 0 280 150" role="img" aria-label={t("A school desk sending marks and discipline to a parent phone")}>
-      <rect x="8" y="12" width="264" height="126" rx="24" fill="#e3f2fd" />
-      <rect x="22" y="34" width="96" height="84" rx="14" fill="#0D47A1" />
-      <path d="M22 56h96" stroke="#4FC3F7" strokeWidth="4" />
-      <rect x="36" y="68" width="18" height="14" rx="3" fill="#ffffff" />
-      <rect x="62" y="68" width="18" height="14" rx="3" fill="#ffffff" />
-      <rect x="36" y="90" width="18" height="14" rx="3" fill="#90CAF9" />
-      <rect x="62" y="90" width="18" height="14" rx="3" fill="#90CAF9" />
-      <circle cx="150" cy="58" r="16" fill="#ffffff" />
-      <path d="M134 112c2-18 10-26 16-26s14 8 16 26" fill="#ffffff" />
-      <g className="assess-pen">
-        <rect x="178" y="26" width="76" height="102" rx="16" fill="#1565C0" />
-        <rect x="186" y="38" width="60" height="66" rx="8" fill="#ffffff" />
-        <text x="216" y="64" textAnchor="middle" fill="#0D47A1" fontSize="13" fontWeight="800" fontFamily="Instrument Sans, sans-serif">94/100</text>
-        <text x="216" y="84" textAnchor="middle" fill="#1565C0" fontSize="11" fontFamily="Instrument Sans, sans-serif">{t("Discipline")}</text>
-        <circle cx="216" cy="114" r="4" fill="#4FC3F7" />
-      </g>
-    </svg>
-  );
-}
 
 function HomeTiles({ tiles, unread = 0 }) {
   const groups = [...new Set(tiles.map((tile) => tile.group))];
@@ -415,11 +723,12 @@ function HomeTiles({ tiles, unread = 0 }) {
 }
 
 function Students({ token }) {
-  const empty = { fullName: "", studentCode: "", classRoom: "", parentName: "", parentPhone: "" };
+  const empty = { fullName: "", classRoom: "", parentName: "", parentPhone: "" };
   const [items, setItems] = useState([]);
   const [classes, setClasses] = useState([]);
   const [form, setForm] = useState(empty);
   const [editingId, setEditingId] = useState(null);
+  const [submitted, setSubmitted] = useState(false);
 
   async function load() {
     const [students, rooms] = await Promise.all([api("/students", { token }), api("/academics/classes", { token })]);
@@ -435,23 +744,24 @@ function Students({ token }) {
     setEditingId(student._id);
     setForm({
       fullName: student.fullName,
-      studentCode: student.studentCode,
       classRoom: student.classRoom?._id || "",
       parentName: parent?.fullName === "Parent" ? "" : parent?.fullName || "",
-      parentPhone: parent?.phone || "",
+      parentPhone: localPhone(parent?.phone) || takePhone(parent?.phone),
     });
   }
 
   async function save(event) {
     event.preventDefault();
-    if (!form.fullName.trim() || !form.studentCode.trim()) return notify(t("Not completed"), t("Enter the student name and student code."), "bad");
+    setSubmitted(true);
+    if (!form.fullName.trim()) return notify(t("Not completed"), t("Type a student name"), "bad");
     if (!form.classRoom) return notify(t("Not completed"), t("Choose a class first."), "bad");
+    const parentPhone = localPhone(form.parentPhone);
     if (!form.parentPhone.trim()) return notify(t("Not completed"), t("Enter the parent phone. That number receives the messages."), "bad");
+    if (!parentPhone) return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
     const body = {
       fullName: form.fullName.trim(),
-      studentCode: form.studentCode.trim(),
       classRoom: form.classRoom,
-      guardians: [{ relation: "guardian", fullName: form.parentName.trim() || "Parent", phone: form.parentPhone.trim(), isPrimary: true }],
+      guardians: [{ relation: "guardian", fullName: form.parentName.trim() || "Parent", phone: parentPhone, isPrimary: true }],
     };
     const ok = await act(async () => {
       if (editingId) await api(`/students/${editingId}`, { method: "PATCH", token, body });
@@ -460,6 +770,7 @@ function Students({ token }) {
     }, editingId ? t("Student updated") : t("Student registered"), t("The parent phone is saved for messages."));
     if (ok) {
       setEditingId(null);
+      setSubmitted(false);
       setForm((current) => ({ ...empty, classRoom: current.classRoom }));
     }
   }
@@ -469,7 +780,6 @@ function Students({ token }) {
       <form className="panel form-grid" onSubmit={save}>
         <h2>{editingId ? "Update student" : "Register student"}</h2>
         <Field label="Student name" value={form.fullName} onChange={(value) => setForm({ ...form, fullName: value })} />
-        <Field label="Student code" value={form.studentCode} onChange={(value) => setForm({ ...form, studentCode: value })} />
         <label className="field">Assigned class
           <select value={form.classRoom} onChange={(event) => setForm({ ...form, classRoom: event.target.value })}>
             <option value="">{t("Choose a class")}</option>
@@ -477,7 +787,7 @@ function Students({ token }) {
           </select>
         </label>
         <Field label="Parent name" value={form.parentName} onChange={(value) => setForm({ ...form, parentName: value })} />
-        <Field label="Parent telephone" value={form.parentPhone} onChange={(value) => setForm({ ...form, parentPhone: value })} placeholder="250780000000" />
+        <Field label="Parent telephone" value={form.parentPhone} submitted={submitted} error={phoneIssue(form.parentPhone)} onChange={(value) => setForm({ ...form, parentPhone: takePhone(value) })} placeholder="0788000000" />
         <div className="actions">
           <button className="solid" type="submit">{editingId ? "Save changes" : "Register student"}</button>
           {editingId ? <button className="ghost" type="button" onClick={() => { setEditingId(null); setForm((current) => ({ ...empty, classRoom: current.classRoom })); }}>{t("Cancel")}</button> : null}
@@ -513,7 +823,7 @@ function Students({ token }) {
                       <td data-label="Student" className="roster-name">{student.fullName}</td>
                       <td data-label="Class"><span className="roster-pill">{student.classRoom?.name || t("No class")}</span></td>
                       <td data-label={t("Student code")} className="roster-code">{student.studentCode}</td>
-                      <td data-label={t("Parent telephone")} className="roster-phone">{parent?.phone || t("No phone")}</td>
+                      <td data-label={t("Parent telephone")} className="roster-phone">{localPhone(parent?.phone) || t("No phone")}</td>
                       <td data-label="Actions">
                         <div className="roster-actions">
                           <button className="ghost" type="button" onClick={() => beginEdit(student)}>{t("Update")}</button>
@@ -536,43 +846,36 @@ function Students({ token }) {
   );
 }
 
-function subjectRows(room, schoolSubjects) {
-  const onClass = (room?.subjects || []).map((row) => row.subject).filter((subject) => subject?._id);
-  return onClass.length ? onClass : schoolSubjects;
-}
-
 function StaffDesk({ token }) {
-  const categories = ["teacher", "discipline", "leadership", "support"];
+  const categories = ["teacher", "dos", "discipline", "accountant", "leadership", "support"];
+  const categoryLabel = { teacher: "Teacher", dos: "Director of Studies", discipline: "Discipline", accountant: "Accountant", leadership: "Leadership", support: "Support" };
   const [items, setItems] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [subjectIds, setSubjectIds] = useState([]);
+  const [grants, setGrants] = useState({});
   const blank = { fullName: "", email: "", phone: "", password: "Staff@123", roleTitle: "Teacher", category: "teacher", qualifications: "", classRoom: "" };
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(blank);
   const [passwordAgain, setPasswordAgain] = useState("Staff@123");
+  const [submitted, setSubmitted] = useState(false);
 
   async function load() {
-    const [people, rooms, subjectData] = await Promise.all([
+    const [people, rooms] = await Promise.all([
       api("/staff", { token }),
       api("/academics/classes", { token }).catch(() => ({ items: [] })),
-      api("/academics/subjects", { token }).catch(() => ({ items: [] })),
     ]);
     setItems(people.items || []);
     setClasses(rooms.items || []);
-    setSubjects(subjectData.items || []);
     setForm((current) => ({ ...current, classRoom: current.classRoom || rooms.items?.[0]?._id || "" }));
   }
 
   useEffect(() => { load().catch((err) => notify(t("Not completed"), err.message, "bad")); }, [token]);
 
-  const listed = subjectRows(classes.find((room) => room._id === form.classRoom), subjects);
-
   function resetForm() {
     setEditingId(null);
     setForm(blank);
     setPasswordAgain("Staff@123");
-    setSubjectIds([]);
+    setGrants({});
+    setSubmitted(false);
   }
 
   function beginEdit(member) {
@@ -582,7 +885,7 @@ function StaffDesk({ token }) {
     setForm({
       fullName: member.fullName || "",
       email: member.email || member.user?.email || "",
-      phone: member.phone || member.whatsapp || "",
+      phone: localPhone(member.phone || member.whatsapp) || takePhone(member.phone || member.whatsapp),
       password: "",
       roleTitle: member.roleTitle || "",
       category: member.category || "teacher",
@@ -590,35 +893,86 @@ function StaffDesk({ token }) {
       classRoom,
     });
     setPasswordAgain("");
-    setSubjectIds((member.subjects || []).map((subject) => subject._id));
+    const next = {};
+    classes.forEach((room) => {
+      (room.subjects || []).forEach((row) => {
+        if (String(row.teacher?._id || row.teacher || "") !== String(member._id)) return;
+        const subjectId = row.subject?._id;
+        if (!subjectId) return;
+        next[subjectId] = [...(next[subjectId] || []), room._id];
+      });
+    });
+    setGrants(next);
   }
 
+  function toggleGrant(subjectId, classId) {
+    setGrants((current) => {
+      const classIds = new Set(current[subjectId] || []);
+      if (classIds.has(classId)) classIds.delete(classId);
+      else classIds.add(classId);
+      return { ...current, [subjectId]: [...classIds] };
+    });
+  }
+
+  const subjectChoices = useMemo(() => {
+    const map = new Map();
+    classes.forEach((room) => {
+      (room.subjects || []).forEach((row) => {
+        if (!row.subject?._id) return;
+        const current = map.get(row.subject._id) || { subject: row.subject, classes: [] };
+        current.classes.push({ id: room._id, name: room.name, teacher: row.teacher });
+        map.set(row.subject._id, current);
+      });
+    });
+    return [...map.values()].sort((a, b) => String(a.subject.name).localeCompare(String(b.subject.name)));
+  }, [classes]);
+
   async function assignTeacher(staffId) {
-    const picked = listed.filter((subject) => subjectIds.includes(subject._id));
-    if (form.category !== "teacher" || !form.classRoom) {
+    if (form.category !== "teacher") {
       const previous = classes.filter((room) => (room.classTeacher?._id || room.classTeacher) === staffId);
       await Promise.all(previous.map((room) => api(`/academics/classes/${room._id}`, { method: "PATCH", token, body: { classTeacher: null } })));
       return;
     }
-    const previous = classes.filter((room) => (room.classTeacher?._id || room.classTeacher) === staffId && room._id !== form.classRoom);
-    await Promise.all(previous.map((room) => api(`/academics/classes/${room._id}`, { method: "PATCH", token, body: { classTeacher: null } })));
-    await api(`/academics/classes/${form.classRoom}`, { method: "PATCH", token, body: { classTeacher: staffId } });
-    const room = classes.find((item) => item._id === form.classRoom);
-    const dropped = (room?.subjects || []).filter((row) => (row.teacher?._id || row.teacher) === staffId && !subjectIds.includes(row.subject?._id));
-    await Promise.all([
-      ...picked.map((subject) => api(`/academics/classes/${form.classRoom}/assign`, { method: "POST", token, body: { subjectId: subject._id, teacherId: staffId } })),
-      ...dropped.map((row) => api(`/academics/classes/${form.classRoom}/assign`, { method: "POST", token, body: { subjectId: row.subject._id, teacherId: null } })),
-    ]);
-    await api(`/staff/${staffId}`, { method: "PATCH", token, body: { subjects: picked.map((subject) => subject._id), classes: [form.classRoom] } });
+    const tasks = [];
+    const subjectIds = new Set();
+    const classIds = new Set();
+    classes.forEach((room) => {
+      (room.subjects || []).forEach((row) => {
+        const subjectId = row.subject?._id;
+        if (!subjectId) return;
+        const selected = (grants[subjectId] || []).includes(room._id);
+        const currentTeacher = String(row.teacher?._id || row.teacher || "");
+        if (selected) {
+          tasks.push(() => api(`/academics/classes/${room._id}/assign`, { method: "POST", token, body: { subjectId, teacherId: staffId } }));
+          subjectIds.add(subjectId);
+          classIds.add(room._id);
+        } else if (currentTeacher === String(staffId)) {
+          tasks.push(() => api(`/academics/classes/${room._id}/assign`, { method: "POST", token, body: { subjectId, teacherId: null } }));
+        }
+      });
+    });
+    for (const task of tasks) await task();
+    const led = classes.filter((room) => (room.classTeacher?._id || room.classTeacher) === staffId);
+    if (form.classRoom) {
+      await Promise.all(led.filter((room) => room._id !== form.classRoom).map((room) => api(`/academics/classes/${room._id}`, { method: "PATCH", token, body: { classTeacher: null } })));
+      await api(`/academics/classes/${form.classRoom}`, { method: "PATCH", token, body: { classTeacher: staffId } });
+      classIds.add(form.classRoom);
+    } else {
+      await Promise.all(led.map((room) => api(`/academics/classes/${room._id}`, { method: "PATCH", token, body: { classTeacher: null } })));
+    }
+    await api(`/staff/${staffId}`, { method: "PATCH", token, body: { subjects: [...subjectIds], classes: [...classIds] } });
   }
 
   async function save(event) {
     event.preventDefault();
+    setSubmitted(true);
     const changingPassword = Boolean(form.password || passwordAgain);
     if (changingPassword && form.password !== passwordAgain) return notify(t("Passwords do not match"), t("Type the same password in both fields."), "bad");
     if (!editingId && !form.password) return notify(t("Password required"), t("Set a password and confirm it."), "bad");
-    if (form.category === "teacher" && classes.length && !form.classRoom) return notify(t("Choose a class"), t("Select the class this teacher will manage."), "bad");
-    const body = { fullName: form.fullName, email: form.email, phone: form.phone, roleTitle: form.roleTitle, category: form.category, qualifications: form.qualifications, whatsapp: form.phone };
+    if (form.category === "teacher" && classes.length && !Object.values(grants).some((ids) => ids.length)) return notify(t("Choose a class"), t("Choose at least one class for a subject."), "bad");
+    const phone = form.phone.trim() ? localPhone(form.phone) : "";
+    if (form.phone.trim() && !phone) return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
+    const body = { fullName: form.fullName, email: form.email, phone, roleTitle: form.roleTitle, category: form.category, qualifications: form.qualifications, whatsapp: phone };
     if (form.password) body.password = form.password;
     const ok = await act(async () => {
       if (editingId) {
@@ -639,28 +993,43 @@ function StaffDesk({ token }) {
         <h2>{editingId ? "Update staff" : "New account"}</h2>
         <Field label="Full name" value={form.fullName} onChange={(value) => setForm({ ...form, fullName: value })} />
         <Field label="Role title" value={form.roleTitle} onChange={(value) => setForm({ ...form, roleTitle: value })} />
-        <div className="chips span">{categories.map((item) => <button type="button" key={item} className={form.category === item ? "on" : ""} onClick={() => setForm({ ...form, category: item })}>{item}</button>)}</div>
+        <div className="chips span">{categories.map((item) => <button type="button" key={item} className={form.category === item ? "on" : ""} onClick={() => setForm({ ...form, category: item, roleTitle: item === "dos" ? "Director of Studies" : item === "accountant" && (form.roleTitle === "Teacher" || form.roleTitle === "Director of Studies" || !form.roleTitle) ? "Accountant" : form.roleTitle })}>{t(categoryLabel[item])}</button>)}</div>
+        {form.category === "accountant" ? <p className="muted span">{t("They sign in and open the accountant portal.")}</p> : null}
+        {form.category === "dos" ? <p className="muted span">{t("They sign in and open the studies desk.")}</p> : null}
         <Field label="Email (login)" value={form.email} onChange={(value) => setForm({ ...form, email: value })} />
-        <Field label="Phone / WhatsApp" value={form.phone} onChange={(value) => setForm({ ...form, phone: value })} placeholder="250788000000" />
+        <Field label="Phone / WhatsApp" value={form.phone} submitted={submitted} error={phoneIssue(form.phone)} onChange={(value) => setForm({ ...form, phone: takePhone(value) })} placeholder="0788000000" />
         <Field label={editingId ? "New password" : "Password"} type="password" value={form.password} onChange={(value) => setForm({ ...form, password: value })} placeholder={editingId ? "Leave blank to keep the current password" : ""} />
         <Field label="Confirm password" type="password" value={passwordAgain} onChange={setPasswordAgain} placeholder={editingId ? "Leave blank to keep the current password" : ""} />
         <Field label="Qualifications" value={form.qualifications} onChange={(value) => setForm({ ...form, qualifications: value })} />
         {form.category === "teacher" ? (
           <>
-            <label className="field span">Class this teacher manages
-              <select value={form.classRoom} onChange={(event) => { setForm({ ...form, classRoom: event.target.value }); setSubjectIds([]); }}>
+            <label className="field span">{t("Class this teacher manages")}
+              <select value={form.classRoom} onChange={(event) => setForm({ ...form, classRoom: event.target.value })}>
                 <option value="">{t("Choose a class")}</option>
                 {classes.map((room) => <option key={room._id} value={room._id}>{room.name}{room.classTeacher?.fullName ? ` · ${room.classTeacher.fullName}` : ""}</option>)}
               </select>
             </label>
             {classes.length === 0 ? <p className="muted span">{t("Create the class first. The class teacher is chosen here, not on the class form.")}</p> : null}
-            <div className="span">
-              <p className="kicker">{t("Subjects in this class")}</p>
-              <div className="chips">
-                {listed.map((subject) => (
-                  <button type="button" key={subject._id} className={subjectIds.includes(subject._id) ? "on" : ""} onClick={() => setSubjectIds((current) => current.includes(subject._id) ? current.filter((id) => id !== subject._id) : [...current, subject._id])}>{subject.name}</button>
-                ))}
-              </div>
+            <div className="span sections">
+              <p className="kicker">{t("Subjects")}</p>
+              <p className="muted">{t("Choose each subject, then the classes where this teacher may change its marks.")}</p>
+              <p className="muted">{t("Only this teacher can update, edit, or delete marks for that subject in the chosen classes.")}</p>
+              {subjectChoices.map((choice) => (
+                <div key={choice.subject._id}>
+                  <p><strong>{choice.subject.name}</strong></p>
+                  <div className="chips">
+                    {choice.classes.map((room) => {
+                      const on = (grants[choice.subject._id] || []).includes(room.id);
+                      const otherName = room.teacher?.fullName && String(room.teacher?._id || "") !== String(editingId || "") ? room.teacher.fullName : "";
+                      return (
+                        <button type="button" key={room.id} className={on ? "on" : ""} onClick={() => toggleGrant(choice.subject._id, room.id)}>
+                          {room.name}{otherName && !on ? ` · ${otherName}` : ""}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </>
         ) : null}
@@ -678,11 +1047,11 @@ function StaffDesk({ token }) {
           const subjectNames = member.subjects?.length ? member.subjects.map((subject) => subject.name).join(", ") : t("None selected");
           return (
             <article key={member._id} className="panel sections">
-              <p className="kicker">{member.category || "staff"}</p>
+              <p className="kicker">{t(categoryLabel[member.category] || member.category || "staff")}</p>
               <h2>{member.fullName}</h2>
               <p><strong>{t("Role title.")}</strong> {member.roleTitle || t("Not given")}</p>
               <p><strong>{t("Email.")}</strong> {member.email || member.user?.email || t("Not given")}</p>
-              <p><strong>{t("Phone / WhatsApp.")}</strong> {member.phone || member.whatsapp || t("Not given")}</p>
+              <p><strong>{t("Phone / WhatsApp.")}</strong> {localPhone(member.phone || member.whatsapp) || t("Not given")}</p>
               <p><strong>{t("Qualifications.")}</strong> {member.qualifications || t("Not given")}</p>
               <p><strong>{t("Login.")}</strong> {member.user?.email ? t("Password saved. It is not shown again.") : t("No login account")}</p>
               <p><strong>{t("Class.")}</strong> {classNames.length ? classNames.join(", ") : t("No class yet")}</p>
@@ -709,6 +1078,7 @@ function Classes({ token }) {
   const [subjects, setSubjects] = useState([]);
   const [classes, setClasses] = useState([]);
   const [subjectName, setSubjectName] = useState("");
+  const [subjectCredits, setSubjectCredits] = useState("");
   const [picked, setPicked] = useState([]);
   const [className, setClassName] = useState("");
   const [year, setYear] = useState(String(new Date().getFullYear()));
@@ -729,6 +1099,7 @@ function Classes({ token }) {
     setEditingId(null);
     setClassName("");
     setSubjectName("");
+    setSubjectCredits("");
     setPicked([]);
     setYear(String(new Date().getFullYear()));
   }
@@ -738,19 +1109,23 @@ function Classes({ token }) {
     setClassName(room.name || "");
     setYear(room.academicYear || String(new Date().getFullYear()));
     setSubjectName("");
+    setSubjectCredits("");
     setPicked((room.subjects || []).map((row) => row.subject).filter((subject) => subject?.name));
   }
 
   function addSubject() {
     const name = subjectName.trim();
     if (!name) return notify(t("Add a subject"), t("Type the subject name, then add it to this class."), "bad");
-    if (picked.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
-      setSubjectName("");
-      return;
-    }
     const existing = subjects.find((item) => item.name.toLowerCase() === name.toLowerCase());
-    setPicked((current) => [...current, existing || { name }]);
+    const credits = wholeCredits(subjectCredits) || wholeCredits(existing?.credits);
+    if (!credits) return notify(t("Subject credits"), t("Enter the credits for this subject. 1 credit equals 10 marks."), "bad");
+    const next = { ...(existing || { name }), name: existing?.name || name, credits };
+    setPicked((current) => {
+      const without = current.filter((item) => item.name.toLowerCase() !== name.toLowerCase());
+      return [...without, next];
+    });
     setSubjectName("");
+    setSubjectCredits("");
   }
 
   return (
@@ -758,18 +1133,24 @@ function Classes({ token }) {
       <form className="panel form-grid" onSubmit={(event) => {
         event.preventDefault();
         const pending = subjectName.trim();
+        const pendingExisting = subjects.find((item) => item.name.toLowerCase() === pending.toLowerCase());
+        const pendingCredits = wholeCredits(subjectCredits) || wholeCredits(pendingExisting?.credits);
         const draft = pending && !picked.some((item) => item.name.toLowerCase() === pending.toLowerCase())
-          ? [...picked, subjects.find((item) => item.name.toLowerCase() === pending.toLowerCase()) || { name: pending }]
+          ? [...picked, { ...(pendingExisting || { name: pending }), name: pendingExisting?.name || pending, credits: pendingCredits }]
           : picked;
         if (!className.trim()) return notify(t("Class name"), t("Enter the class name."), "bad");
         if (!draft.length) return notify(t("Add the subjects"), t("Add at least one subject before saving the class."), "bad");
+        if (draft.some((subject) => !wholeCredits(subject.credits))) return notify(t("Subject credits"), t("Enter the credits for this subject. 1 credit equals 10 marks."), "bad");
         act(async () => {
           const ids = [];
           for (const subject of draft) {
             let id = subject._id;
+            const credits = wholeCredits(subject.credits);
             if (!id) {
-              const made = await api("/academics/subjects", { method: "POST", token, body: { name: subject.name } });
+              const made = await api("/academics/subjects", { method: "POST", token, body: { name: subject.name, credits } });
               id = made.item._id;
+            } else if (wholeCredits(subjects.find((item) => item._id === id)?.credits) !== credits) {
+              await api(`/academics/subjects/${id}`, { method: "PATCH", token, body: { credits } });
             }
             ids.push(id);
           }
@@ -786,19 +1167,21 @@ function Classes({ token }) {
         <Field label="Class name" value={className} onChange={setClassName} placeholder={t("S6 PCM")} />
         <Field label="Academic year" value={year} onChange={setYear} />
         <Field label="Subject" value={subjectName} onChange={setSubjectName} placeholder={t("Mathematics")} />
+        <Field label="Subject credits" value={subjectCredits} onChange={setSubjectCredits} placeholder="6" />
+        <p className="muted span">{t("1 credit equals 10 marks.")}</p>
         <button className="ghost" type="button" onClick={addSubject}>{t("Add subject")}</button>
         <div className="span">
           <p className="kicker">{t("Subjects on this class")}</p>
           {picked.length === 0 ? <p className="muted">{t("No subjects added yet.")}</p> : null}
           <div className="chips">
             {picked.map((subject) => (
-              <button type="button" key={subject._id || subject.name} className="on" onClick={() => setPicked((current) => current.filter((item) => item.name !== subject.name))}>{subject.name}</button>
+              <button type="button" key={subject._id || subject.name} className="on" onClick={() => setPicked((current) => current.filter((item) => item.name !== subject.name))}>{subjectLabel(subject)}</button>
             ))}
           </div>
           {subjects.some((subject) => !picked.some((item) => item.name.toLowerCase() === subject.name.toLowerCase())) ? <p className="kicker">{t("Already in the school")}</p> : null}
           <div className="chips">
             {subjects.filter((subject) => !picked.some((item) => item.name.toLowerCase() === subject.name.toLowerCase())).map((subject) => (
-              <button type="button" key={subject._id} onClick={() => setPicked((current) => [...current, subject])}>{subject.name}</button>
+              <button type="button" key={subject._id} onClick={() => setPicked((current) => current.some((item) => item.name.toLowerCase() === subject.name.toLowerCase()) ? current : [...current, { ...subject, credits: wholeCredits(subjectCredits) || subject.credits }])}>{subjectLabel(subject)}</button>
             ))}
           </div>
         </div>
@@ -811,7 +1194,7 @@ function Classes({ token }) {
         <article key={room._id} className="panel sections">
           <h2>{room.name}</h2>
           <p className="muted">{room.academicYear} · {room.classTeacher?.fullName || "No teacher yet. Choose one when you register a teacher."}</p>
-          <p>{(room.subjects || []).map((row) => row.subject?.name || "Subject").join(" · ") || "No subjects on this class yet."}</p>
+          <p>{(room.subjects || []).map((row) => subjectLabel(row.subject) || "Subject").join(" · ") || "No subjects on this class yet."}</p>
           <div className="actions">
             <button className="ghost" type="button" onClick={() => beginEdit(room)}>{t("Update")}</button>
             <button className="danger" type="button" onClick={() => {
@@ -998,70 +1381,523 @@ function AssessGraphic() {
   );
 }
 
-function Marks({ token, school }) {
+function wholeCredits(value) {
+  const credits = Number(value);
+  return Number.isInteger(credits) && credits >= 1 && credits <= 40 ? credits : 0;
+}
+
+function subjectTotal(credits) {
+  return wholeCredits(credits) * 10;
+}
+
+function oneDecimal(value) {
+  return Math.round((Number(value) + Number.EPSILON) * 10) / 10;
+}
+
+function showDecimal(value) {
+  const rounded = oneDecimal(value);
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+}
+
+function creditFileName(name) {
+  const slug = String(name || "subject").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "subject";
+  return `ishuriapp-${slug}-credits`;
+}
+
+function summaryFileName(name) {
+  const slug = String(name || "subject").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "subject";
+  return `ishuriapp-${slug}-summary`;
+}
+
+function examFileName(name) {
+  const slug = String(name || "subject").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "subject";
+  return `ishuriapp-${slug}-examination`;
+}
+
+function examCreditFileName(name) {
+  const slug = String(name || "subject").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "subject";
+  return `ishuriapp-${slug}-examination-credits`;
+}
+
+function summaryHead(test) {
+  const mark = `${test.title} /${test.maxScore}`;
+  const date = test.date ? prettyKey(dayKey(test.date)) : "";
+  return date ? `${mark} · ${date}` : mark;
+}
+
+function summaryLine(sheet) {
+  return sheet.tests.map(summaryHead).join(" · ");
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function downloadFile(filename, mime, text) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function subjectLabel(subject) {
+  const total = subjectTotal(subject?.credits);
+  return total ? `${subject.name} · /${total}` : subject?.name || "";
+}
+
+function storedTerm(value) {
+  const term = String(value || "1").trim().toLowerCase();
+  if (term === "2" || term === "term 2") return "2";
+  if (term === "3" || term === "term 3") return "3";
+  if (term === "annual" || term === "year") return "annual";
+  return "1";
+}
+
+function termMatches(value, term) {
+  return storedTerm(value) === storedTerm(term);
+}
+
+function termLabel(term) {
+  const key = storedTerm(term);
+  if (key === "2") return t("Term 2");
+  if (key === "3") return t("Term 3");
+  if (key === "annual") return t("Annual");
+  return t("Term 1");
+}
+
+function TermField({ value, onChange }) {
+  return (
+    <label className="field">{t("Term")}
+      <select value={storedTerm(value)} onChange={(event) => onChange(event.target.value)}>
+        <option value="1">{t("Term 1")}</option>
+        <option value="2">{t("Term 2")}</option>
+        <option value="3">{t("Term 3")}</option>
+        <option value="annual">{t("Annual")}</option>
+      </select>
+    </label>
+  );
+}
+
+function ReportSpan({ year, onYear, from, onFrom, to, onTo }) {
+  return (
+    <>
+      <label className="field">{t("Year")}
+        <input type="number" min="2020" value={year} onChange={(event) => onYear(event.target.value)} />
+      </label>
+      <label className="field">{t("From")}
+        <input type="date" value={from} onChange={(event) => onFrom(event.target.value)} />
+      </label>
+      <label className="field">{t("To")}
+        <input type="date" value={to} onChange={(event) => onTo(event.target.value)} />
+      </label>
+    </>
+  );
+}
+
+function buildCreditSheet({ classroom, subject, assessments, history, term, papers = "assessment", year = "", from = "", to = "" }) {
+  const credits = wholeCredits(subject?.credits);
+  if (!classroom || !subject || !credits) return null;
+  const standard = credits * 10;
+  const chosenTerm = storedTerm(term);
+  const tests = (assessments || [])
+    .filter((item) => {
+      if ((papers === "exam" ? item.type !== "exam" : item.type === "exam")) return false;
+      if (String(item.classRoom?._id || item.classRoom) !== String(classroom._id)) return false;
+      if (String(item.subject?._id || item.subject) !== String(subject._id)) return false;
+      if (!termMatches(item.term, chosenTerm)) return false;
+      const day = dayKey(item.date);
+      const recorded = String(item.academicYear || day.slice(0, 4));
+      if (/^\d{4}$/.test(String(year || "")) && recorded !== String(year)) return false;
+      if (from && (!day || day < from)) return false;
+      if (to && (!day || day > to)) return false;
+      return true;
+    })
+    .slice()
+    .sort((a, b) => String(a.date || a.createdAt || "").localeCompare(String(b.date || b.createdAt || "")) || String(a.title).localeCompare(String(b.title)));
+  const sumMax = tests.reduce((sum, item) => sum + Number(item.maxScore || 0), 0);
+  const people = (history || [])
+    .filter((row) => String(row.classRoom) === String(classroom._id))
+    .slice()
+    .sort((a, b) => String(a.student?.fullName || "").localeCompare(String(b.student?.fullName || "")));
+  const rows = people.map((row) => {
+    const scores = new Map((row.marks || []).filter((mark) => mark.assessment?._id).map((mark) => [String(mark.assessment._id), mark.score]));
+    const cells = tests.map((test) => {
+      const entered = scores.has(String(test._id));
+      const max = Number(test.maxScore || 0);
+      const raw = entered ? Number(scores.get(String(test._id)) || 0) : 0;
+      const share = sumMax > 0 ? (max / sumMax) * standard : 0;
+      const onTotal = max > 0 ? oneDecimal((raw / max) * share) : 0;
+      return { entered, raw, max, onTotal };
+    });
+    const final = oneDecimal(cells.reduce((sum, cell) => sum + cell.onTotal, 0));
+    return { id: row.student._id, name: row.student.fullName, cells, final };
+  });
+  return { subject, classroom, credits, standard, tests, rows, sumMax, term: chosenTerm, termLabel: termLabel(chosenTerm) };
+}
+
+function buildOpenExamCredit({ assessment, students, marks }) {
+  const credits = wholeCredits(assessment?.subject?.credits);
+  if (!assessment || assessment.type !== "exam" || !credits) return null;
+  const standard = credits * 10;
+  const max = Number(assessment.maxScore || 0);
+  const rows = (students || []).map((student) => {
+    const rawText = marks?.[student._id];
+    const raw = rawText === "" || rawText == null ? 0 : Number(rawText);
+    const value = Number.isFinite(raw) ? raw : 0;
+    const final = max > 0 ? oneDecimal((value / max) * standard) : 0;
+    return { id: student._id, name: student.fullName, final };
+  });
+  return {
+    subject: assessment.subject,
+    classroom: assessment.classRoom,
+    standard,
+    tests: [assessment],
+    rows,
+    termLabel: termLabel(assessment.term),
+  };
+}
+
+function assessmentLine(sheet) {
+  return sheet.tests.map((test) => `${test.title} /${test.maxScore}`).join(" · ");
+}
+
+let draftSerial = 1;
+function blankDraft(partial = {}) {
+  draftSerial += 1;
+  return { key: draftSerial, title: "", maxScore: "100", date: isoDay(new Date()), ...partial };
+}
+
+function commentForScore(score, ranges) {
+  if (score === "" || score == null) return "";
+  const value = Number(score);
+  if (!Number.isFinite(value)) return "";
+  const match = (ranges || []).find((row) => {
+    if (row?.from === "" || row?.to === "" || row?.from == null || row?.to == null) return false;
+    const from = Number(row.from);
+    const to = Number(row.to);
+    return Number.isFinite(from) && Number.isFinite(to) && value >= from && value <= to;
+  });
+  return match ? String(match.comment || "") : "";
+}
+
+function blankRange() {
+  draftSerial += 1;
+  return { key: `range-${draftSerial}`, from: "", to: "", comment: "" };
+}
+
+function creditExport(sheet) {
+  const header = [t("No."), t("Student"), t("Final /{total}", { total: sheet.standard })];
+  const lines = sheet.rows.map((row, index) => [index + 1, row.name, `${showDecimal(row.final)}/${sheet.standard}`]);
+  return { header, lines };
+}
+
+function summaryExport(sheet) {
+  const header = [t("No."), t("Student"), ...sheet.tests.map(summaryHead), t("Final /{total}", { total: sheet.standard })];
+  const lines = sheet.rows.map((row, index) => [
+    index + 1,
+    row.name,
+    ...row.cells.map((cell) => (cell.entered ? cell.raw : 0)),
+    `${showDecimal(row.final)}/${sheet.standard}`,
+  ]);
+  return { header, lines };
+}
+
+function CreditTable({ sheet, preview }) {
+  return (
+    <table className={preview ? "doc-table" : "board roster-table report-table premium-table"}>
+      <thead>
+        <tr>
+          <th>{t("No.")}</th>
+          <th>{t("Student")}</th>
+          <th>{t("Final /{total}", { total: sheet.standard })}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sheet.rows.map((row, index) => (
+          <tr key={row.id}>
+            <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+            <td data-label={t("Student")} className="roster-name">{row.name}</td>
+            <td data-label={t("Final /{total}", { total: sheet.standard })} className="num">{showDecimal(row.final)}/{sheet.standard}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function CreditPreview({ school, sheet, onClose, heading = "Credit report", done = "Assessments done" }) {
+  useEffect(() => {
+    document.body.classList.add("doc-open");
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("doc-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="doc-preview" role="dialog" aria-modal="true" aria-label={t(heading)}>
+      <div className="doc-toolbar no-print">
+        <strong>{t(heading)}</strong>
+        <button className="solid" type="button" onClick={() => window.print()}>{t("Print / Save PDF")}</button>
+        <button className="ghost" type="button" onClick={onClose}>{t("Close")}</button>
+      </div>
+      <div className="doc-sheet">
+        <article className="doc-student">
+          <PrintHeading school={school} title={t(heading)} note={`${sheet.classroom?.name || ""} · ${sheet.termLabel} · ${t("{subject} is marked over {total}.", { subject: sheet.subject.name, total: sheet.standard })}`} />
+          <p>{t(done)}: {assessmentLine(sheet)}</p>
+          <p>{t("A blank mark counts as 0.")}</p>
+          {sheet.rows.length ? <CreditTable sheet={sheet} preview /> : <p>{t("No students in your classes yet.")}</p>}
+        </article>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function examMark(value) {
+  return value === "" || value == null ? "0" : String(value);
+}
+
+function ExamPreview({ school, assessment, students, marks, onClose }) {
+  useEffect(() => {
+    document.body.classList.add("doc-open");
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("doc-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="doc-preview" role="dialog" aria-modal="true" aria-label={t("Examination")}>
+      <div className="doc-toolbar no-print">
+        <strong>{t("Examination")}</strong>
+        <button className="solid" type="button" onClick={() => window.print()}>{t("Print / Save PDF")}</button>
+        <button className="ghost" type="button" onClick={onClose}>{t("Close")}</button>
+      </div>
+      <div className="doc-sheet">
+        <article className="doc-student">
+          <PrintHeading school={school} title={assessment.title} note={`${assessment.classRoom?.name || t("Class")} · ${assessment.subject?.name || t("Subject")} · ${termLabel(assessment.term)} · /${assessment.maxScore}`} />
+          <p>{t("A blank mark counts as 0.")}</p>
+          {students.length ? (
+            <table className="doc-table">
+              <thead>
+                <tr>
+                  <th>{t("No.")}</th>
+                  <th>{t("Student")}</th>
+                  <th>{t("Marks")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student, index) => (
+                  <tr key={student._id}>
+                    <td>{index + 1}</td>
+                    <td>{student.fullName}</td>
+                    <td>{examMark(marks[student._id])}/{assessment.maxScore}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <p>{t("No students in your classes yet.")}</p>}
+        </article>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function SummaryTable({ sheet, preview }) {
+  return (
+    <table className={preview ? "doc-table" : "board roster-table report-table premium-table"}>
+      <thead>
+        <tr>
+          <th>{t("No.")}</th>
+          <th>{t("Student")}</th>
+          {sheet.tests.map((test) => <th key={test._id}>{summaryHead(test)}</th>)}
+          <th>{t("Final /{total}", { total: sheet.standard })}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sheet.rows.map((row, index) => (
+          <tr key={row.id}>
+            <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+            <td data-label={t("Student")} className="roster-name">{row.name}</td>
+            {row.cells.map((cell, cellIndex) => (
+              <td key={sheet.tests[cellIndex]._id} data-label={summaryHead(sheet.tests[cellIndex])} className="num">{cell.entered ? cell.raw : 0}</td>
+            ))}
+            <td data-label={t("Final /{total}", { total: sheet.standard })} className="num">{showDecimal(row.final)}/{sheet.standard}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function SummaryPreview({ school, sheet, onClose }) {
+  useEffect(() => {
+    document.body.classList.add("doc-open");
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("doc-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="doc-preview is-landscape" role="dialog" aria-modal="true" aria-label={t("Summary report")}>
+      <div className="doc-toolbar no-print">
+        <strong>{t("Summary report")}</strong>
+        <button className="solid" type="button" onClick={() => window.print()}>{t("Print / Save PDF")}</button>
+        <button className="ghost" type="button" onClick={onClose}>{t("Close")}</button>
+      </div>
+      <div className="doc-sheet">
+        <article className="doc-student">
+          <PrintHeading school={school} title={subjectLabel(sheet.subject)} note={`${t("Summary report")} · ${sheet.classroom?.name || ""} · ${sheet.termLabel} · ${t("{subject} is marked over {total}.", { subject: sheet.subject.name, total: sheet.standard })}`} />
+          <p>{t("Assessments done")}: {summaryLine(sheet)}</p>
+          <p>{t("A blank mark counts as 0.")}</p>
+          {sheet.rows.length ? <SummaryTable sheet={sheet} preview /> : <p>{t("No students in your classes yet.")}</p>}
+        </article>
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+function Marks({ token, school, view, reportsOnly = false }) {
   const [assessments, setAssessments] = useState([]);
   const [students, setStudents] = useState([]);
   const [classes, setClasses] = useState([]);
-  const [title, setTitle] = useState("Periodic test");
-  const [maxScore, setMaxScore] = useState("100");
-  const [assessmentDate, setAssessmentDate] = useState(isoDay(new Date()));
+  const [drafts, setDrafts] = useState(() => [blankDraft()]);
   const [classId, setClassId] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [selected, setSelected] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [marks, setMarks] = useState({});
   const [comments, setComments] = useState({});
+  const [ranges, setRanges] = useState([]);
+  const rangeSnap = useRef([]);
+  const [assessView, setAssessView] = useState("cards");
   const [history, setHistory] = useState([]);
-  const [historyClassId, setHistoryClassId] = useState("");
-  const [search, setSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [period, setPeriod] = useState("all");
-  const [reportYear, setReportYear] = useState(String(new Date().getFullYear()));
-  const [reportTerm, setReportTerm] = useState("1");
-  const [reportStudentId, setReportStudentId] = useState("");
-  const [official, setOfficial] = useState(null);
-  const [orientation, setOrientation] = useState("portrait");
+  const [creditClassId, setCreditClassId] = useState("");
+  const [creditSubjectId, setCreditSubjectId] = useState("");
+  const [creditDraft, setCreditDraft] = useState("");
+  const [creditOpen, setCreditOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [creditTerm, setCreditTerm] = useState("1");
+  const [sheetYear, setSheetYear] = useState(String(new Date().getFullYear()));
+  const [sheetFrom, setSheetFrom] = useState("");
+  const [sheetTo, setSheetTo] = useState("");
+  const [assessmentTerm, setAssessmentTerm] = useState("1");
+  const [examOpen, setExamOpen] = useState(false);
+  const [examCreditOpen, setExamCreditOpen] = useState(false);
+  const [examClassId, setExamClassId] = useState("");
+  const [attendance, setAttendance] = useState({});
+  const [reasons, setReasons] = useState({});
 
   async function load() {
     const [sheet, rooms] = await Promise.all([
       api("/marks/assessments", { token }),
-      api("/academics/classes?scope=all", { token }),
+      api("/academics/classes", { token }),
     ]);
-    setAssessments(sheet.items || []);
-    setClasses(rooms.items || []);
-    setClassId((current) => current || rooms.items?.[0]?._id || "");
+    const roomItems = rooms.items || [];
+    const owned = new Set();
+    roomItems.forEach((room) => {
+      (room.subjects || []).forEach((row) => {
+        const subjectKey = row.subject?._id || row.subject;
+        if (subjectKey) owned.add(`${room._id}:${subjectKey}`);
+      });
+    });
+    setAssessments((sheet.items || []).filter((item) => owned.has(`${item.classRoom?._id || item.classRoom}:${item.subject?._id || item.subject}`)));
+    setClasses(roomItems);
+    const withSubject = (rooms.items || []).find((room) => (room.subjects || []).some((row) => row.subject?.name));
+    setClassId((current) => current || withSubject?._id || rooms.items?.[0]?._id || "");
+    setCreditClassId((current) => current || withSubject?._id || rooms.items?.[0]?._id || "");
   }
 
   useEffect(() => { load().catch((err) => notify(t("Not completed"), err.message, "bad")); }, [token]);
+  const historyClassId = view === "examination" ? classId : creditClassId;
   useEffect(() => {
-    const ids = historyClassId ? [historyClassId] : classes.map((item) => item._id);
-    if (!ids.length) {
+    if (!historyClassId) {
       setHistory([]);
       return undefined;
     }
     let cancelled = false;
-    Promise.all(ids.map((id) => api(`/marks/classes/${id}/history`, { token })))
-      .then((pages) => { if (!cancelled) setHistory(pages.flatMap((page) => page.items || [])); })
+    api(`/marks/classes/${historyClassId}/history`, { token })
+      .then((page) => { if (!cancelled) setHistory((page.items || []).map((row) => ({ ...row, classRoom: historyClassId }))); })
       .catch((err) => { if (!cancelled) notify(t("Not completed"), err.message, "bad"); });
     return () => { cancelled = true; };
-  }, [historyClassId, classes, token, assessments]);
+  }, [historyClassId, token, assessments]);
   useEffect(() => {
     if (!selected) return;
     const assessment = assessments.find((item) => item._id === selected);
-    const query = assessment?.classRoom?._id ? `?classRoom=${assessment.classRoom._id}` : "";
-    Promise.all([api(`/marks/assessments/${selected}/marks`, { token }), api(`/students${query}`, { token })]).then(([sheet, roster]) => {
+    const storedRanges = assessment?.ranges?.length ? assessment.ranges : [{ from: "", to: "", comment: "" }];
+    setRanges(storedRanges.map((row) => ({ ...blankRange(), from: row.from === 0 || row.from ? String(row.from) : "", to: row.to === 0 || row.to ? String(row.to) : "", comment: row.comment || "" })));
+    const roomId = assessment?.classRoom?._id;
+    const rosterCall = reportsOnly
+      ? (roomId ? api(`/marks/classes/${roomId}/history`, { token }) : Promise.resolve({ items: [] }))
+      : api(`/students${roomId ? `?classRoom=${roomId}` : ""}`, { token });
+    Promise.all([api(`/marks/assessments/${selected}/marks`, { token }), rosterCall]).then(([sheet, roster]) => {
       const next = {};
       const nextComments = {};
+      const nextAttendance = {};
+      const nextReasons = {};
       (sheet.items || []).forEach((row) => {
         next[row.student._id] = String(row.score);
-        nextComments[row.student._id] = row.comment || "";
+        nextComments[row.student._id] = row.comment || commentForScore(row.score, assessment?.ranges);
+        nextAttendance[row.student._id] = row.attended === false ? "no" : "yes";
+        nextReasons[row.student._id] = row.absenceReason || "";
       });
       setMarks(next);
       setComments(nextComments);
-      setStudents(roster.items || []);
+      setAttendance(nextAttendance);
+      setReasons(nextReasons);
+      if (reportsOnly) {
+        const people = new Map();
+        (roster.items || []).forEach((row) => {
+          if (row.student?._id) people.set(String(row.student._id), { ...row.student });
+        });
+        (sheet.items || []).forEach((row) => {
+          if (!row.student?._id) return;
+          const existing = people.get(String(row.student._id)) || {};
+          people.set(String(row.student._id), { ...existing, ...row.student });
+        });
+        setStudents([...people.values()].sort((a, b) => String(a.fullName || "").localeCompare(String(b.fullName || ""))));
+      } else {
+        setStudents(roster.items || []);
+      }
     }).catch((err) => notify(t("Not completed"), err.message, "bad"));
   }, [selected, token]);
+  useEffect(() => {
+    const previousRanges = rangeSnap.current;
+    rangeSnap.current = ranges;
+    setComments((current) => {
+      const next = { ...current };
+      let changed = false;
+      students.forEach((student) => {
+        const score = marks[student._id];
+        const auto = commentForScore(score, ranges);
+        const previous = commentForScore(score, previousRanges);
+        const existing = current[student._id] || "";
+        const previousText = new Set((previousRanges || []).map((row) => String(row.comment || "").trim()).filter(Boolean));
+        const followsRange = !existing || existing === previous || previousText.has(existing);
+        const replacement = auto ? (followsRange ? auto : existing) : (followsRange ? "" : existing);
+        if (replacement !== existing) {
+          next[student._id] = replacement;
+          changed = true;
+        }
+      });
+      return changed ? next : current;
+    });
+  }, [ranges]);
 
   const room = classes.find((item) => item._id === classId);
   const listed = useMemo(() => (
@@ -1077,103 +1913,767 @@ function Marks({ token, school }) {
     if (!ids.includes(String(subjectId))) setSubjectId(ids[0]);
   }, [listed, subjectId]);
 
-  function notifyParents(id) {
-    track((async () => {
-      try {
-        const sent = await api(`/marks/assessments/${id}/notify-parents`, { method: "POST", token });
-        const line = sent.message || t("The marks were sent to the parent phones.");
-        notify(line.startsWith(t("Sent to")) ? t("Parents notified") : t("Some messages were not sent"), line, line.startsWith(t("Sent to")) ? "ok" : "bad");
-      } catch (err) {
-        notify(t("Not completed"), err instanceof Error ? err.message : t("Could not send this message"), "bad");
-      }
-    })());
+  const creditRoom = classes.find((item) => item._id === creditClassId);
+  const creditSubjects = useMemo(() => (
+    (creditRoom?.subjects || []).map((row) => row.subject).filter((subject) => subject?._id && subject?.name)
+  ), [creditRoom]);
+  const creditSubject = creditSubjects.find((item) => String(item._id) === String(creditSubjectId));
+
+  useEffect(() => {
+    const ids = creditSubjects.map((item) => String(item._id));
+    if (!ids.length) {
+      if (creditSubjectId) setCreditSubjectId("");
+      return;
+    }
+    if (!ids.includes(String(creditSubjectId))) setCreditSubjectId(ids[0]);
+  }, [creditSubjects, creditSubjectId]);
+
+  useEffect(() => {
+    setCreditDraft(creditSubject?.credits ? String(creditSubject.credits) : "");
+  }, [creditSubject]);
+
+  const creditSheet = useMemo(() => buildCreditSheet({
+    classroom: creditRoom,
+    subject: creditSubject,
+    assessments,
+    history,
+    term: creditTerm,
+    year: sheetYear,
+    from: sheetFrom,
+    to: sheetTo,
+  }), [creditRoom, creditSubject, assessments, history, creditTerm, sheetYear, sheetFrom, sheetTo]);
+
+  function updateDraft(index, patch) {
+    setDrafts((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...patch } : row));
   }
 
   async function saveAssessment(event) {
     event.preventDefault();
-    const over = Number(maxScore);
     if (!classId || !subjectId) return notify(t("Not completed"), t("Choose a class and a subject first"), "bad");
     const chosen = listed.find((item) => String(item._id) === String(subjectId));
     if (!chosen) return notify(t("Not completed"), t("Choose a subject that is on this class."), "bad");
-    if (!Number.isFinite(over) || over <= 0) return notify(t("Not completed"), t("Set the mark the assessment is over, for example 100"), "bad");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(assessmentDate)) return notify(t("Not completed"), t("Set the assessment date as year-month-day, for example 2026-10-16"), "bad");
-    const body = { title, classRoom: classId, subject: chosen._id, maxScore: over, date: assessmentDate, term: "1", academicYear: String(new Date().getFullYear()) };
+    const examPage = view === "examination";
+    const source = examPage ? drafts.slice(0, 1) : drafts;
+    const items = source.map((row) => ({ title: row.title.trim() || (examPage ? "Examination" : ""), maxScore: Number(row.maxScore), date: row.date, type: examPage ? "exam" : "test" }));
+    if (items.some((row) => !row.title)) return notify(t("Not completed"), t("Enter the assessment title"), "bad");
+    if (items.some((row) => !Number.isFinite(row.maxScore) || row.maxScore <= 0)) return notify(t("Not completed"), t("Set the mark the assessment is over, for example 100"), "bad");
+    if (items.some((row) => !/^\d{4}-\d{2}-\d{2}$/.test(row.date))) return notify(t("Not completed"), t("Set the assessment date as year-month-day, for example 2026-10-16"), "bad");
+    const year = String(new Date().getFullYear());
     const ok = await act(async () => {
-      if (editingId) await api(`/marks/assessments/${editingId}`, { method: "PATCH", token, body });
-      else {
-        const created = await api("/marks/assessments", { method: "POST", token, body });
-        setSelected(created.assessment._id);
+      if (editingId) {
+        await api(`/marks/assessments/${editingId}`, { method: "PATCH", token, body: { ...items[0], classRoom: classId, subject: chosen._id, term: assessmentTerm, type: examPage ? "exam" : "test", academicYear: year } });
+      } else {
+        const created = await api("/marks/assessments/batch", { method: "POST", token, body: { classRoom: classId, subject: chosen._id, term: assessmentTerm, academicYear: year, items } });
+        setSelected(created.items?.[0]?._id || null);
       }
       await load();
-    }, editingId ? t("Assessment updated") : t("Assessment created"), editingId ? `${title} is now over ${over}.` : t("Open it to enter marks and comments."));
-    if (ok) setEditingId(null);
-  }
-
-  function choosePeriod(id) {
-    const range = periodRange(id);
-    setPeriod(id);
-    setFromDate(range.from);
-    setToDate(range.to);
-  }
-
-  const historyClass = classes.find((item) => item._id === historyClassId);
-  const nameOptions = history.map((row) => ({ id: row.student._id, name: row.student.fullName, detail: row.student.studentCode || historyClass?.name || "" }));
-  const datesFlipped = Boolean(fromDate && toDate && fromDate > toDate);
-  const query = search.trim().toLowerCase();
-  const reportRows = datesFlipped ? [] : history.flatMap((row) => {
-    if (query && !row.student.fullName.toLowerCase().includes(query)) return [];
-    return (row.marks || []).flatMap((mark) => {
-      const day = dayKey(mark.assessment?.date || mark.createdAt);
-      if (fromDate && (!day || day < fromDate)) return [];
-      if (toDate && (!day || day > toDate)) return [];
-      const total = mark.assessment?.maxScore ?? 100;
-      return [{
-        id: mark._id,
-        day,
-        student: row.student.fullName,
-        subject: mark.assessment?.subject?.name || "Subject",
-        title: mark.assessment?.title || "Assessment",
-        score: mark.score,
-        total,
-        comment: mark.comment || "",
-      }];
-    });
-  }).sort((a, b) => (b.day || "").localeCompare(a.day || "") || a.student.localeCompare(b.student));
-  const average = reportRows.length
-    ? Math.round(reportRows.reduce((sum, row) => sum + (Number(row.score) / Number(row.total || 1)) * 100, 0) / reportRows.length)
-    : 0;
-
-  function openOfficial() {
-    if (!reportIsFiltered({ classId: historyClassId, fromDate, toDate, search })) {
-      notify(t("Choose a filter"), t("Select a class, or set the dates or a student name, before printing."), "bad");
-      return;
+    }, examPage ? t("Save examination") : editingId ? t("Assessment updated") : items.length === 1 ? t("Assessment created") : t("{count} assessments created", { count: items.length }), editingId ? `${items[0].title} is now over ${items[0].maxScore}.` : t("Open it to enter marks and comments."));
+    if (ok) {
+      setEditingId(null);
+      setDrafts([blankDraft()]);
     }
-    const typed = nameOptions.filter((item) => item.name.toLowerCase() === search.trim().toLowerCase());
-    const student = reportStudentId || (typed.length === 1 ? typed[0].id : "");
-    if (search.trim() && !student) {
-      notify(t("Choose a student"), t("Pick the name from the suggestions, or clear the box to include the whole class."), "bad");
-      return;
-    }
-    if (!historyClassId && !student) {
-      notify(t("Choose a class or a student"), t("The academic report needs a class or a student. A date range prints on the register."), "bad");
-      return;
-    }
-    if (!reportYear.trim() || !reportTerm) {
-      notify(t("Choose the report"), t("Enter the academic year and the term."), "bad");
-      return;
-    }
-    const query = new URLSearchParams({ academicYear: reportYear.trim(), term: reportTerm });
-    if (historyClassId) query.set("classRoom", historyClassId);
-    if (student) query.set("student", student);
-    track(api(`/marks/report?${query}`, { token }))
-      .then((data) => {
-        setOfficial(data);
-        notify(t("Report ready"), t("Review the preview, then print or save the PDF."));
-      })
-      .catch((err) => notify(t("Not completed"), err.message, "bad"));
   }
 
   const openAssessment = assessments.find((item) => item._id === selected);
+  const examCreditSheet = useMemo(() => buildOpenExamCredit({
+    assessment: openAssessment?.type === "exam" ? openAssessment : null,
+    students,
+    marks,
+  }), [openAssessment, students, marks]);
+  const assessmentGroups = useMemo(() => {
+    const groups = new Map();
+    assessments.forEach((item) => {
+      if (item.type === "exam") return;
+      const key = `${item.classRoom?._id || "class"}:${item.subject?._id || item.subject?.name || "subject"}`;
+      const current = groups.get(key) || { key, className: item.classRoom?.name || "Class", subject: subjectLabel(item.subject) || item.subject?.name || "Subject", items: [] };
+      current.items.push(item);
+      groups.set(key, current);
+    });
+    return [...groups.values()];
+  }, [assessments]);
+  function inSheetRange(item) {
+    const day = dayKey(item.date);
+    const recorded = String(item.academicYear || day.slice(0, 4));
+    if (/^\d{4}$/.test(String(sheetYear || "")) && recorded !== String(sheetYear)) return false;
+    if (sheetFrom && (!day || day < sheetFrom)) return false;
+    if (sheetTo && (!day || day > sheetTo)) return false;
+    return true;
+  }
+  const assessmentList = useMemo(() => (
+    assessments.filter((item) => item.type !== "exam" && inSheetRange(item)).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || String(a.title).localeCompare(String(b.title)))
+  ), [assessments, sheetYear, sheetFrom, sheetTo]);
+  const examinations = useMemo(() => (
+    assessments.filter((item) => item.type === "exam" && inSheetRange(item)).slice().sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || String(a.title).localeCompare(String(b.title)))
+  ), [assessments, sheetYear, sheetFrom, sheetTo]);
+
+  function setStudentMark(studentId, value) {
+    const text = String(value);
+    if (text !== "" && !/^\d*\.?\d*$/.test(text)) return;
+    const max = Number(openAssessment?.maxScore);
+    if (markIssue(text, max) && !markIssue(marks[studentId], max)) notify(t("Marks"), t("A mark cannot be negative or above the total."), "bad");
+    const previous = commentForScore(marks[studentId], ranges);
+    const nextAuto = commentForScore(text, ranges);
+    const current = comments[studentId] || "";
+    setMarks({ ...marks, [studentId]: text });
+    if (nextAuto) setComments({ ...comments, [studentId]: nextAuto });
+    else if (!current || current === previous) setComments({ ...comments, [studentId]: "" });
+  }
+
+  function setAttend(studentId, value) {
+    setAttendance({ ...attendance, [studentId]: value });
+    if (value !== "no") setReasons({ ...reasons, [studentId]: "" });
+  }
+
+  function sheetMarks() {
+    const max = Number(openAssessment?.maxScore);
+    for (const student of students) {
+      const missed = attendance[student._id] === "no";
+      if (missed && !String(reasons[student._id] || "").trim()) {
+        notify(t("Follow-up"), t("Enter the reason this student did not attend."), "bad");
+        return null;
+      }
+      if (missed) continue;
+      const text = String(marks[student._id] ?? "").trim();
+      if (!text) continue;
+      const score = Number(text);
+      if (!Number.isFinite(score) || score < 0 || score > max) {
+        notify(t("Marks"), t("A mark cannot be negative or above the total."), "bad");
+        return null;
+      }
+    }
+    return students.map((student) => {
+      const missed = attendance[student._id] === "no";
+      return {
+        studentId: student._id,
+        score: missed ? 0 : Number(marks[student._id] || 0),
+        comment: missed ? "" : comments[student._id],
+        attended: !missed,
+        absenceReason: missed ? String(reasons[student._id] || "").trim() : "",
+      };
+    });
+  }
+
+  function saveRanges() {
+    if (!openAssessment) return;
+    const cleaned = [];
+    for (const row of ranges) {
+      const empty = !String(row.from).trim() && !String(row.to).trim() && !String(row.comment).trim();
+      if (empty) continue;
+      const from = Number(row.from);
+      const to = Number(row.to);
+      if (!Number.isFinite(from) || !Number.isFinite(to)) return notify(t("Mark ranges"), t("Marks ranges must be numbers"), "bad");
+      if (from < 0 || to < 0 || from > Number(openAssessment.maxScore) || to > Number(openAssessment.maxScore)) return notify(t("Mark ranges"), t("A mark cannot be negative or above the total."), "bad");
+      if (from > to) return notify(t("Mark ranges"), t("The lower mark cannot be above the higher mark."), "bad");
+      if (view !== "examination" && !String(row.comment).trim()) return notify(t("Mark ranges"), t("Enter a comment for each range."), "bad");
+      cleaned.push({ from, to, comment: row.comment.trim() });
+    }
+    const date = openAssessment.date ? isoDay(new Date(openAssessment.date)) : isoDay(new Date());
+    act(async () => {
+      await api(`/marks/assessments/${openAssessment._id}`, {
+        method: "PATCH",
+        token,
+        body: {
+          title: openAssessment.title,
+          maxScore: openAssessment.maxScore,
+          classRoom: openAssessment.classRoom?._id || openAssessment.classRoom,
+          subject: openAssessment.subject?._id || openAssessment.subject,
+          date,
+          term: storedTerm(openAssessment.term),
+          ranges: cleaned,
+        },
+      });
+      const nextComments = { ...comments };
+      students.forEach((student) => {
+        const auto = commentForScore(marks[student._id], cleaned);
+        if (auto) nextComments[student._id] = auto;
+      });
+      setComments(nextComments);
+      await load();
+    }, t("Ranges saved"), t("The comment follows the mark range."));
+  }
+
+  function requireCreditSheet() {
+    if (!creditSubject) return notify(t("Subject credits"), t("Choose a class and a subject first"), "bad");
+    if (!wholeCredits(creditSubject.credits)) return notify(t("Subject credits"), t("Set the credits before you download."), "bad");
+    if (!creditSheet?.tests.length) {
+      const hasAny = assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam");
+      return notify(t("Credit report"), t(hasAny ? "No assessments in this term." : "Add at least one assessment for this subject first."), "bad");
+    }
+    return creditSheet;
+  }
+
+  function saveSubjectCredits() {
+    const credits = wholeCredits(creditDraft);
+    if (!creditSubject) return notify(t("Subject credits"), t("Choose a class and a subject first"), "bad");
+    if (!credits) return notify(t("Subject credits"), t("Enter the credits for this subject. 1 credit equals 10 marks."), "bad");
+    act(() => api(`/academics/subjects/${creditSubject._id}`, { method: "PATCH", token, body: { credits } }).then(load), t("Save credits"), t("{subject} is marked over {total}.", { subject: creditSubject.name, total: credits * 10 }));
+  }
+
+  function saveCreditExcel() {
+    const sheet = requireCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = creditExport(sheet);
+    const csv = [`\uFEFF${csvCell(sheet.termLabel)}`, `${csvCell(t("Assessments done"))},${csvCell(assessmentLine(sheet))}`, header.map(csvCell).join(","), ...lines.map((line) => line.map(csvCell).join(","))].join("\n");
+    downloadFile(`${creditFileName(sheet.subject.name)}.csv`, "text/csv;charset=utf-8", csv);
+  }
+
+  function saveCreditWord() {
+    const sheet = requireCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = creditExport(sheet);
+    const table = `<table border="1" cellspacing="0" cellpadding="6"><tr>${header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr>${lines.map((line) => `<tr>${line.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</table>`;
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${escapeHtml(t("Credit report"))}</title></head><body><h1>${escapeHtml(school?.name || "IshuriApp")}</h1><p>${escapeHtml(sheet.classroom.name)} · ${escapeHtml(sheet.termLabel)} · ${escapeHtml(t("{subject} is marked over {total}.", { subject: sheet.subject.name, total: sheet.standard }))}</p><p>${escapeHtml(t("Assessments done"))}: ${escapeHtml(assessmentLine(sheet))}</p><p>${escapeHtml(t("A blank mark counts as 0."))}</p>${table}</body></html>`;
+    downloadFile(`${creditFileName(sheet.subject.name)}.doc`, "application/msword", html);
+  }
+
+  function saveSummaryExcel() {
+    const sheet = requireCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = summaryExport(sheet);
+    const csv = [`\uFEFF${csvCell(sheet.termLabel)}`, `${csvCell(t("Assessments done"))},${csvCell(summaryLine(sheet))}`, header.map(csvCell).join(","), ...lines.map((line) => line.map(csvCell).join(","))].join("\n");
+    downloadFile(`${summaryFileName(sheet.subject.name)}.csv`, "text/csv;charset=utf-8", csv);
+  }
+
+  function saveSummaryWord() {
+    const sheet = requireCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = summaryExport(sheet);
+    const table = `<table border="1" cellspacing="0" cellpadding="6"><tr>${header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr>${lines.map((line) => `<tr>${line.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</table>`;
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${escapeHtml(t("Summary report"))}</title></head><body><h1>${escapeHtml(school?.name || "IshuriApp")}</h1><p>${escapeHtml(sheet.classroom.name)} · ${escapeHtml(sheet.termLabel)} · ${escapeHtml(t("{subject} is marked over {total}.", { subject: sheet.subject.name, total: sheet.standard }))}</p><p>${escapeHtml(t("Assessments done"))}: ${escapeHtml(summaryLine(sheet))}</p><p>${escapeHtml(t("A blank mark counts as 0."))}</p>${table}</body></html>`;
+    downloadFile(`${summaryFileName(sheet.subject.name)}.doc`, "application/msword", html);
+  }
+
+  function examinationLines() {
+    if (!openAssessment || openAssessment.type !== "exam") return null;
+    const header = [t("No."), t("Student"), t("Marks")];
+    const lines = students.map((student, index) => [index + 1, student.fullName, `${examMark(marks[student._id])}/${openAssessment.maxScore}`]);
+    return { header, lines };
+  }
+
+  function saveExaminationExcel() {
+    const sheet = examinationLines();
+    if (!sheet || !openAssessment) return;
+    const subjectName = openAssessment.subject?.name || "subject";
+    const csv = [`\uFEFF${csvCell(t("Examination"))}`, `${csvCell(openAssessment.title)},${csvCell(subjectName)},${csvCell(openAssessment.classRoom?.name || "")}`, sheet.header.map(csvCell).join(","), ...sheet.lines.map((line) => line.map(csvCell).join(","))].join("\n");
+    downloadFile(`${examFileName(subjectName)}.csv`, "text/csv;charset=utf-8", csv);
+  }
+
+  function saveExaminationWord() {
+    const sheet = examinationLines();
+    if (!sheet || !openAssessment) return;
+    const subjectName = openAssessment.subject?.name || "subject";
+    const table = `<table border="1" cellspacing="0" cellpadding="6"><tr>${sheet.header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr>${sheet.lines.map((line) => `<tr>${line.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</table>`;
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${escapeHtml(t("Examination"))}</title></head><body><h1>${escapeHtml(school?.name || "IshuriApp")}</h1><p>${escapeHtml(openAssessment.title)} · ${escapeHtml(subjectName)} · ${escapeHtml(openAssessment.classRoom?.name || "")} · ${escapeHtml(termLabel(openAssessment.term))} · /${escapeHtml(openAssessment.maxScore)}</p><p>${escapeHtml(t("A blank mark counts as 0."))}</p>${table}</body></html>`;
+    downloadFile(`${examFileName(subjectName)}.doc`, "application/msword", html);
+  }
+
+  function requireExamCreditSheet() {
+    if (!openAssessment || openAssessment.type !== "exam") return notify(t("Credited examination marks"), t("Open an examination to see its credited marks."), "bad");
+    if (!wholeCredits(openAssessment.subject?.credits)) return notify(t("Subject credits"), t("Set the credits before you download."), "bad");
+    if (!examCreditSheet?.rows.length) return notify(t("Credited examination marks"), t("No students in your classes yet."), "bad");
+    return examCreditSheet;
+  }
+
+  function saveExamCreditExcel() {
+    const sheet = requireExamCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = creditExport(sheet);
+    const csv = [`\uFEFF${csvCell(sheet.termLabel)}`, `${csvCell(t("Examination"))},${csvCell(assessmentLine(sheet))}`, header.map(csvCell).join(","), ...lines.map((line) => line.map(csvCell).join(","))].join("\n");
+    downloadFile(`${examCreditFileName(sheet.subject?.name)}.csv`, "text/csv;charset=utf-8", csv);
+  }
+
+  function saveExamCreditWord() {
+    const sheet = requireExamCreditSheet();
+    if (!sheet) return;
+    const { header, lines } = creditExport(sheet);
+    const table = `<table border="1" cellspacing="0" cellpadding="6"><tr>${header.map((cell) => `<th>${escapeHtml(cell)}</th>`).join("")}</tr>${lines.map((line) => `<tr>${line.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`).join("")}</table>`;
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${escapeHtml(t("Credited examination marks"))}</title></head><body><h1>${escapeHtml(school?.name || "IshuriApp")}</h1><p>${escapeHtml(sheet.classroom?.name || "")} · ${escapeHtml(sheet.termLabel)} · ${escapeHtml(t("{subject} is marked over {total}.", { subject: sheet.subject?.name || "", total: sheet.standard }))}</p><p>${escapeHtml(t("Examination"))}: ${escapeHtml(assessmentLine(sheet))}</p><p>${escapeHtml(t("A blank mark counts as 0."))}</p>${table}</body></html>`;
+    downloadFile(`${examCreditFileName(sheet.subject?.name)}.doc`, "application/msword", html);
+  }
+
+  if (view === "examination" && reportsOnly) {
+    const showing = openAssessment?.type === "exam" ? openAssessment : null;
+    const visible = examinations.filter((item) => !examClassId || String(item.classRoom?._id || item.classRoom) === String(examClassId));
+    return (
+      <div className="sections assess">
+        <section className="panel sections no-print">
+          <header className="assess-head">
+            <span className="assess-mark"><Icon name="graduate" /></span>
+            <div>
+              <p className="kicker">{t("Director of Studies")}</p>
+              <h2>{t("Examination")}</h2>
+            </div>
+          </header>
+          <p className="muted">{t("Every examination entered by the teachers, with the class, subject and marks.")}</p>
+          <p className="muted">{t("Examination marks are kept on their own. They are not included in assessment reports.")}</p>
+          <div className="form-grid">
+            <label className="field">{t("Class")}
+              <select value={examClassId} onChange={(event) => setExamClassId(event.target.value)}>
+                <option value="">{t("All classes")}</option>
+                {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+              </select>
+            </label>
+            <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+          </div>
+          {visible.length === 0 ? <p className="roster-empty">{t("No examinations yet.")}</p> : (
+            <table className="board roster-table">
+              <thead>
+                <tr>
+                  <th>{t("No.")}</th>
+                  <th>{t("Teacher")}</th>
+                  <th>{t("Examination")}</th>
+                  <th>{t("Class")}</th>
+                  <th>{t("Subject")}</th>
+                  <th>{t("Date")}</th>
+                  <th>{t("Term")}</th>
+                  <th>{t("Over")}</th>
+                  <th>{t("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visible.map((item, index) => (
+                  <tr key={item._id}>
+                    <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+                    <td data-label={t("Teacher")}>{item.teacher?.fullName || "—"}</td>
+                    <td data-label={t("Examination")} className="roster-name">{item.title}</td>
+                    <td data-label={t("Class")}>{item.classRoom?.name || t("Class")}</td>
+                    <td data-label={t("Subject")}>{item.subject?.name || t("Subject")}</td>
+                    <td data-label={t("Date")}>{item.date ? prettyKey(dayKey(item.date)) : "—"}</td>
+                    <td data-label={t("Term")}>{termLabel(item.term)}</td>
+                    <td data-label={t("Over")} className="num">{item.maxScore}</td>
+                    <td data-label={t("Actions")}>
+                      <button className="ghost" type="button" onClick={() => setSelected(item._id)}>{selected === item._id ? t("Selected") : t("Open marks")}</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </section>
+        {showing ? (
+          <section className="roster assess-sheet no-print">
+            <header className="roster-head">
+              <div>
+                <p className="kicker">{t("Examination")}</p>
+                <h2>{showing.title}</h2>
+                <p className="muted">{showing.teacher?.fullName || t("Teacher")} · {showing.subject?.name || t("Subject")} · {showing.classRoom?.name || t("Class")} · {termLabel(showing.term)} · /{showing.maxScore}</p>
+              </div>
+              <span className="roster-count">{students.length}</span>
+            </header>
+            <p className="muted">{t("Students who attended and students who did not, with the reason.")}</p>
+            <table className="board roster-table">
+              <thead>
+                <tr><th>{t("No.")}</th><th>{t("Student")}</th><th>{t("Parent phone")}</th><th>{t("Marks")}</th><th>{t("Comment")}</th><th>{t("Attended")}</th><th>{t("Reason")}</th></tr>
+              </thead>
+              <tbody>
+                {students.map((student, index) => (
+                  <tr key={student._id}>
+                    <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+                    <td data-label={t("Student")} className="roster-name">{student.fullName}</td>
+                    <td data-label={t("Parent phone")}>{localPhone(parentOf(student)?.phone) || t("No phone")}</td>
+                    <td data-label={t("Marks")} className="num">{examMark(marks[student._id])}/{showing.maxScore}</td>
+                    <td data-label={t("Comment")}>{comments[student._id] || "—"}</td>
+                    <td data-label={t("Attended")}>{attendance[student._id] == null ? t("Not recorded") : attendance[student._id] === "no" ? t("Did not attend") : t("Attended")}</td>
+                    <td data-label={t("Reason")}>{attendance[student._id] === "no" ? (reasons[student._id] || "—") : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="actions assess-save">
+              <button className="ghost" type="button" onClick={() => setExamOpen(true)}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveExaminationExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveExaminationWord}>{t("Word")}</button>
+            </div>
+          </section>
+        ) : null}
+        {examOpen && showing ? <ExamPreview school={school} assessment={showing} students={students} marks={marks} onClose={() => setExamOpen(false)} /> : null}
+        {showing && examCreditSheet ? (
+          <section className="panel sections no-print">
+            <header className="assess-head">
+              <span className="assess-mark"><Icon name="award" /></span>
+              <div>
+                <p className="kicker">{t("Subject credits")}</p>
+                <h2>{t("Credited examination marks")}</h2>
+              </div>
+            </header>
+            <p className="muted">{t("1 credit equals 10 marks.")}</p>
+            <p className="muted">{t("Each examination is scaled onto the subject credits. The download lists the credited mark only.")}</p>
+            <p>{t("{subject} is marked over {total}.", { subject: examCreditSheet.subject?.name, total: examCreditSheet.standard })}</p>
+            <p className="muted">{examCreditSheet.termLabel} · {t("Examination")}: {assessmentLine(examCreditSheet)} · {t("A blank mark counts as 0.")}</p>
+            <div className="actions">
+              <button className="solid" type="button" onClick={() => { if (requireExamCreditSheet()) setExamCreditOpen(true); }}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveExamCreditExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveExamCreditWord}>{t("Word")}</button>
+            </div>
+            {examCreditSheet.rows.length ? <CreditTable sheet={examCreditSheet} /> : <p className="roster-empty">{t("No students in your classes yet.")}</p>}
+          </section>
+        ) : showing ? <p className="muted">{t("Set the credits before you download.")}</p> : <p className="muted">{t("Open an examination to see its credited marks.")}</p>}
+        {examCreditOpen && examCreditSheet ? <CreditPreview school={school} sheet={examCreditSheet} onClose={() => setExamCreditOpen(false)} heading="Credited examination marks" done="Examination" /> : null}
+      </div>
+    );
+  }
+
+  if (view === "examination") {
+    const row = drafts[0];
+    const showing = openAssessment?.type === "exam" ? openAssessment : null;
+    return (
+      <div className="sections assess">
+        <form className="panel form-grid assess-create no-print" onSubmit={saveAssessment}>
+          <header className="assess-head">
+            <span className="assess-mark"><Icon name="graduate" /></span>
+            <div>
+              <p className="kicker">{t("Examination")}</p>
+              <h2>{editingId ? t("Edit") : t("New examination")}</h2>
+            </div>
+          </header>
+          <p className="muted span">{t("Examination marks are kept on their own. They are not included in assessment reports.")}</p>
+          <Field label="Title" value={row.title} onChange={(value) => updateDraft(0, { title: value })} />
+          <Field label="Over" value={row.maxScore} onChange={(value) => updateDraft(0, { maxScore: value })} />
+          <Field label="Examination" value={row.date} onChange={(value) => updateDraft(0, { date: value })} placeholder="2026-11-12" />
+          <TermField value={assessmentTerm} onChange={setAssessmentTerm} />
+          <label className="field">{t("Class")}
+            <select value={classId} onChange={(event) => setClassId(event.target.value)}>
+              {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+            </select>
+          </label>
+          <label className="field">{t("Subject")}
+            <select value={subjectId} onChange={(event) => setSubjectId(event.target.value)}>
+              {listed.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
+              {listed.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
+            </select>
+          </label>
+          <div className="actions">
+            <button className="solid" type="submit"><Icon name="pen" />{editingId ? t("Save changes") : t("Save examination")}</button>
+            {editingId ? <button className="ghost" type="button" onClick={() => { setEditingId(null); setDrafts([blankDraft()]); }}>{t("Cancel edit")}</button> : null}
+          </div>
+        </form>
+        <div className="sections no-print">
+          <div className="form-grid">
+            <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+          </div>
+          <header className="roster-head">
+            <div>
+              <p className="kicker">{t("Examination")}</p>
+              <h2>{t("Examination")}</h2>
+            </div>
+          </header>
+          {examinations.length === 0 ? <p className="roster-empty">{t("No examinations yet.")}</p> : (
+            <table className="board roster-table">
+              <thead>
+                <tr>
+                  <th>{t("No.")}</th>
+                  <th>{t("Examination")}</th>
+                  <th>{t("Class")}</th>
+                  <th>{t("Subject")}</th>
+                  <th>{t("Date")}</th>
+                  <th>{t("Term")}</th>
+                  <th>{t("Over")}</th>
+                  <th>{t("Actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {examinations.map((item, index) => (
+                  <tr key={item._id}>
+                    <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+                    <td data-label={t("Examination")} className="roster-name">{item.title}</td>
+                    <td data-label={t("Class")}>{item.classRoom?.name || t("Class")}</td>
+                    <td data-label={t("Subject")}>{item.subject?.name || t("Subject")}</td>
+                    <td data-label={t("Date")}>{item.date ? prettyKey(dayKey(item.date)) : "—"}</td>
+                    <td data-label={t("Term")}>{termLabel(item.term)}</td>
+                    <td data-label={t("Over")} className="num">{item.maxScore}</td>
+                    <td data-label={t("Actions")}>
+                      <div className="roster-actions">
+                        <button className="ghost" type="button" onClick={() => setSelected(item._id)}>{selected === item._id ? t("Selected") : t("Open marks")}</button>
+                        <button className="ghost" type="button" onClick={() => { setEditingId(item._id); setAssessmentTerm(storedTerm(item.term)); setDrafts([blankDraft({ title: item.title, maxScore: String(item.maxScore), date: item.date ? isoDay(new Date(item.date)) : isoDay(new Date()) })]); if (item.classRoom?._id) setClassId(item.classRoom._id); if (item.subject?._id) setSubjectId(item.subject._id); }}><Icon name="pen" />{t("Edit")}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+        {showing ? (
+          <section className="roster assess-sheet no-print">
+            <header className="roster-head">
+              <div>
+                <p className="kicker">{t("Examination")}</p>
+                <h2>{showing.title}</h2>
+                <p className="muted">{showing.subject?.name || t("Subject")} · {showing.classRoom?.name || t("Class")} · {termLabel(showing.term)} · /{showing.maxScore}</p>
+              </div>
+              <span className="roster-count">{students.length}</span>
+            </header>
+            <section className="range-panel">
+              <header className="range-head">
+                <h3>{t("Mark ranges")}</h3>
+                <p>{t("A comment is optional. When you add one, the first range that contains the mark fills it.")}</p>
+              </header>
+              <div className="range-board">
+                {ranges.map((range, index) => (
+                  <article className="range-card" key={range.key}>
+                    <div className="range-card-top">
+                      <span className="range-index">{index + 1}</span>
+                      {ranges.length > 1 ? <button className="danger" type="button" onClick={() => setRanges((current) => current.filter((item) => item.key !== range.key))}>{t("Remove range")}</button> : null}
+                    </div>
+                    <div className="range-fields">
+                      <Field label="From mark" value={range.from} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, from: value } : item))} />
+                      <Field label="To mark" value={range.to} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, to: value } : item))} />
+                    </div>
+                    <Field label="Comment" value={range.comment} placeholder={t("Optional")} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, comment: value } : item))} />
+                  </article>
+                ))}
+              </div>
+              <div className="actions">
+                <button className="ghost" type="button" onClick={() => setRanges((current) => [...current, blankRange()])}>{t("Add a range")}</button>
+                <button className="solid" type="button" onClick={saveRanges}>{t("Save ranges")}</button>
+              </div>
+            </section>
+            <p className="muted">{t("A student who did not attend is saved as 0. Write the reason.")}</p>
+            <ValidationAlert message={students.some((student) => attendance[student._id] !== "no" && markIssue(marks[student._id], showing?.maxScore)) ? "A mark cannot be negative or above the total." : ""} />
+            <table className="board roster-table">
+              <thead>
+                <tr><th>{t("No.")}</th><th>{t("Student")}</th><th>{t("Parent phone")}</th><th>{t("Marks")}</th><th>{t("Comment")}</th><th>{t("Attended")}</th><th>{t("Reason")}</th></tr>
+              </thead>
+              <tbody>
+                {students.map((student, index) => {
+                  const missed = attendance[student._id] === "no";
+                  return (
+                  <tr key={student._id}>
+                    <td data-label={t("No.")}><span className="roster-no">{index + 1}</span></td>
+                    <td data-label={t("Student")} className="roster-name">{student.fullName}</td>
+                    <td data-label={t("Parent phone")} className="roster-phone">{localPhone(parentOf(student)?.phone) || t("No phone")}</td>
+                    <td data-label={t("Marks")}><input disabled={missed} className={!missed && markIssue(marks[student._id], showing?.maxScore) ? "invalid" : undefined} aria-invalid={!missed && markIssue(marks[student._id], showing?.maxScore) ? true : undefined} aria-label={t("Marks")} inputMode="decimal" value={missed ? "0" : (marks[student._id] || "")} onChange={(event) => setStudentMark(student._id, event.target.value)} /></td>
+                    <td data-label={t("Comment")}><input disabled={missed} aria-label={t("Comment")} placeholder={t("Optional")} value={missed ? "" : (comments[student._id] || "")} onChange={(event) => setComments({ ...comments, [student._id]: event.target.value })} /></td>
+                    <td data-label={t("Attended")}>
+                      <select aria-label={t("Attended")} value={missed ? "no" : "yes"} onChange={(event) => setAttend(student._id, event.target.value)}>
+                        <option value="yes">{t("Attended")}</option>
+                        <option value="no">{t("Did not attend")}</option>
+                      </select>
+                    </td>
+                    <td data-label={t("Reason")}><input aria-label={t("Reason")} maxLength={160} disabled={!missed} placeholder={missed ? t("Reason") : ""} value={reasons[student._id] || ""} onChange={(event) => setReasons({ ...reasons, [student._id]: event.target.value })} /></td>
+                  </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            <div className="actions assess-save">
+              <button className="solid" type="button" onClick={() => { const rows = sheetMarks(); if (!rows) return; act(async () => { await api(`/marks/assessments/${showing._id}/marks`, { method: "POST", token, body: { marks: rows } }); await load(); }, t("Sheet saved"), t("Marks and comments are stored.")); }}><Icon name="check" />{t("Save sheet")}</button>
+              <button className="ghost" type="button" onClick={() => setExamOpen(true)}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveExaminationExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveExaminationWord}>{t("Word")}</button>
+            </div>
+          </section>
+        ) : null}
+        {examOpen && showing ? <ExamPreview school={school} assessment={showing} students={students} marks={marks} onClose={() => setExamOpen(false)} /> : null}
+        {showing && examCreditSheet ? (
+          <section className="panel sections no-print">
+            <header className="assess-head">
+              <span className="assess-mark"><Icon name="award" /></span>
+              <div>
+                <p className="kicker">{t("Subject credits")}</p>
+                <h2>{t("Credited examination marks")}</h2>
+              </div>
+            </header>
+            <p className="muted">{t("1 credit equals 10 marks.")}</p>
+            <p className="muted">{t("Each examination is scaled onto the subject credits. The download lists the credited mark only.")}</p>
+            <p>{t("{subject} is marked over {total}.", { subject: examCreditSheet.subject?.name, total: examCreditSheet.standard })}</p>
+            <p className="muted">{examCreditSheet.termLabel} · {t("Examination")}: {assessmentLine(examCreditSheet)} · {t("A blank mark counts as 0.")}</p>
+            <div className="actions">
+              <button className="solid" type="button" onClick={() => { if (requireExamCreditSheet()) setExamCreditOpen(true); }}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveExamCreditExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveExamCreditWord}>{t("Word")}</button>
+            </div>
+            {examCreditSheet.rows.length ? <CreditTable sheet={examCreditSheet} /> : <p className="roster-empty">{t("No students in your classes yet.")}</p>}
+          </section>
+        ) : showing ? <p className="muted">{t("Set the credits before you download.")}</p> : <p className="muted">{t("Open an examination to see its credited marks.")}</p>}
+        {examCreditOpen && examCreditSheet ? <CreditPreview school={school} sheet={examCreditSheet} onClose={() => setExamCreditOpen(false)} heading="Credited examination marks" done="Examination" /> : null}
+      </div>
+    );
+  }
+
+  if (reportsOnly) {
+    const showSummary = view !== "credits";
+    const showCredit = view !== "summary";
+    const reportFilters = (
+      <div className="form-grid">
+        <label className="field">{t("Class")}
+          <select value={creditClassId} onChange={(event) => setCreditClassId(event.target.value)}>
+            {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+          </select>
+        </label>
+        <label className="field">{t("Subject")}
+          <select value={creditSubjectId} onChange={(event) => setCreditSubjectId(event.target.value)}>
+            {creditSubjects.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
+            {creditSubjects.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
+          </select>
+        </label>
+        <TermField value={creditTerm} onChange={setCreditTerm} />
+        <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+      </div>
+    );
+    return (
+      <div className="sections assess">
+        {showSummary ? (
+          <section className="panel sections no-print">
+            <header className="assess-head">
+              <span className="assess-mark"><Icon name="award" /></span>
+              <div>
+                <p className="kicker">{t("Summary report")}</p>
+                <h2>{t("Assessments done")}</h2>
+              </div>
+            </header>
+            <p className="muted">{t("Choose a class and a subject. The sheet lists every assessment in the term.")}</p>
+            {reportFilters}
+            {creditSubject && wholeCredits(creditSubject.credits) ? (
+              <p>{t("{subject} is marked over {total}.", { subject: creditSubject.name, total: subjectTotal(creditSubject.credits) })}</p>
+            ) : (
+              <p>{t("Set the credits before you download.")}</p>
+            )}
+            {creditSheet?.tests.length ? <p className="muted">{creditSheet.termLabel} · {t("Assessments done")}: {summaryLine(creditSheet)} · {t("A blank mark counts as 0.")}</p> : <p className="muted">{assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam") ? t("No assessments in this term.") : t("Add at least one assessment for this subject first.")}</p>}
+            <div className="actions">
+              <button className="solid" type="button" onClick={() => { if (requireCreditSheet()) setSummaryOpen(true); }}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveSummaryExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveSummaryWord}>{t("Word")}</button>
+            </div>
+            {creditSheet?.tests.length ? (
+              creditSheet.rows.length ? <div className="summary-wrap"><SummaryTable sheet={creditSheet} /></div> : <p className="roster-empty">{t("No students in your classes yet.")}</p>
+            ) : null}
+          </section>
+        ) : null}
+        {showCredit ? (
+          <section className="panel sections no-print">
+            <header className="assess-head">
+              <span className="assess-mark"><Icon name="award" /></span>
+              <div>
+                <p className="kicker">{t("Subject credits")}</p>
+                <h2>{t("Credit report")}</h2>
+              </div>
+            </header>
+            <p className="muted">{t("1 credit equals 10 marks.")}</p>
+            {showSummary ? null : reportFilters}
+            {creditSubject && wholeCredits(creditSubject.credits) ? (
+              <p>{t("{subject} is marked over {total}.", { subject: creditSubject.name, total: subjectTotal(creditSubject.credits) })}</p>
+            ) : (
+              <p>{t("Set the credits before you download.")}</p>
+            )}
+            {creditSheet?.tests.length ? <p className="muted">{creditSheet.termLabel} · {t("Assessments done")}: {assessmentLine(creditSheet)} · {t("A blank mark counts as 0.")}</p> : <p className="muted">{assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam") ? t("No assessments in this term.") : t("Add at least one assessment for this subject first.")}</p>}
+            <div className="actions">
+              <button className="solid" type="button" onClick={() => { if (requireCreditSheet()) setCreditOpen(true); }}>{t("Print / Save PDF")}</button>
+              <button className="ghost" type="button" onClick={saveCreditExcel}>{t("Excel")}</button>
+              <button className="ghost" type="button" onClick={saveCreditWord}>{t("Word")}</button>
+            </div>
+            {creditSheet?.tests.length ? (
+              creditSheet.rows.length ? <CreditTable sheet={creditSheet} /> : <p className="roster-empty">{t("No students in your classes yet.")}</p>
+            ) : null}
+          </section>
+        ) : null}
+        {summaryOpen && creditSheet ? <SummaryPreview school={school} sheet={creditSheet} onClose={() => setSummaryOpen(false)} /> : null}
+        {creditOpen && creditSheet ? <CreditPreview school={school} sheet={creditSheet} onClose={() => setCreditOpen(false)} /> : null}
+      </div>
+    );
+  }
+
+  if (view === "summary") {
+    const missingCredits = creditSubject && !wholeCredits(creditSubject.credits);
+    return (
+      <div className="sections assess">
+        <section className="panel sections no-print">
+          <header className="assess-head">
+            <span className="assess-mark"><Icon name="award" /></span>
+            <div>
+              <p className="kicker">{t("Summary report")}</p>
+              <h2>{t("Assessments done")}</h2>
+            </div>
+          </header>
+          <p className="muted">{t("Choose a class and a subject. The sheet lists every assessment in the term.")}</p>
+          <div className="form-grid">
+            <label className="field">{t("Class")}
+              <select value={creditClassId} onChange={(event) => setCreditClassId(event.target.value)}>
+                {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+              </select>
+            </label>
+            <label className="field">{t("Subject")}
+              <select value={creditSubjectId} onChange={(event) => setCreditSubjectId(event.target.value)}>
+                {creditSubjects.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
+                {creditSubjects.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
+              </select>
+            </label>
+            <TermField value={creditTerm} onChange={setCreditTerm} />
+        <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+            {missingCredits ? <Field label="Subject credits" value={creditDraft} onChange={setCreditDraft} placeholder="6" /> : null}
+            {missingCredits ? <div className="actions"><button className="ghost" type="button" onClick={saveSubjectCredits}>{t("Save credits")}</button></div> : null}
+          </div>
+          {creditSubject && wholeCredits(creditSubject.credits) ? (
+            <p>{t("{subject} is marked over {total}.", { subject: creditSubject.name, total: subjectTotal(creditSubject.credits) })}</p>
+          ) : (
+            <p>{t("Set the credits before you download.")}</p>
+          )}
+          {creditSheet?.tests.length ? <p className="muted">{creditSheet.termLabel} · {t("Assessments done")}: {summaryLine(creditSheet)} · {t("A blank mark counts as 0.")}</p> : <p className="muted">{assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam") ? t("No assessments in this term.") : t("Add at least one assessment for this subject first.")}</p>}
+          <div className="actions">
+            <button className="solid" type="button" onClick={() => { if (requireCreditSheet()) setSummaryOpen(true); }}>{t("Print / Save PDF")}</button>
+            <button className="ghost" type="button" onClick={saveSummaryExcel}>{t("Excel")}</button>
+            <button className="ghost" type="button" onClick={saveSummaryWord}>{t("Word")}</button>
+          </div>
+        </section>
+        {creditSheet?.tests.length ? (
+          creditSheet.rows.length ? <div className="summary-wrap"><SummaryTable sheet={creditSheet} /></div> : <p className="roster-empty">{t("No students in your classes yet.")}</p>
+        ) : null}
+        {summaryOpen && creditSheet ? <SummaryPreview school={school} sheet={creditSheet} onClose={() => setSummaryOpen(false)} /> : null}
+      </div>
+    );
+  }
+
+  if (view === "credits") {
+    return (
+      <div className="sections assess">
+        <section className="panel sections no-print">
+          <header className="assess-head">
+            <span className="assess-mark"><Icon name="award" /></span>
+            <div>
+              <p className="kicker">{t("Subject credits")}</p>
+              <h2>{t("Credited marks")}</h2>
+            </div>
+          </header>
+          <p className="muted">{t("1 credit equals 10 marks.")}</p>
+          <div className="form-grid">
+            <label className="field">{t("Class")}
+              <select value={creditClassId} onChange={(event) => setCreditClassId(event.target.value)}>
+                {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+              </select>
+            </label>
+            <label className="field">{t("Subject")}
+              <select value={creditSubjectId} onChange={(event) => setCreditSubjectId(event.target.value)}>
+                {creditSubjects.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
+                {creditSubjects.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
+              </select>
+            </label>
+            <TermField value={creditTerm} onChange={setCreditTerm} />
+        <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+            <Field label="Subject credits" value={creditDraft} onChange={setCreditDraft} placeholder="6" />
+            <div className="actions">
+              <button className="ghost" type="button" onClick={saveSubjectCredits}>{t("Save credits")}</button>
+            </div>
+          </div>
+          {creditSubject && wholeCredits(creditSubject.credits) ? (
+            <p>{t("{subject} is marked over {total}.", { subject: creditSubject.name, total: subjectTotal(creditSubject.credits) })}</p>
+          ) : (
+            <p>{t("Set the credits before you download.")}</p>
+          )}
+          {creditSheet?.tests.length ? <p className="muted">{creditSheet.termLabel} · {t("Assessments done")}: {assessmentLine(creditSheet)} · {t("A blank mark counts as 0.")}</p> : <p className="muted">{assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam") ? t("No assessments in this term.") : t("Add at least one assessment for this subject first.")}</p>}
+          <div className="actions">
+            <button className="solid" type="button" onClick={() => { if (requireCreditSheet()) setCreditOpen(true); }}>{t("Print / Save PDF")}</button>
+            <button className="ghost" type="button" onClick={saveCreditExcel}>{t("Excel")}</button>
+            <button className="ghost" type="button" onClick={saveCreditWord}>{t("Word")}</button>
+          </div>
+          {creditSheet?.tests.length ? (
+            creditSheet.rows.length ? <CreditTable sheet={creditSheet} /> : <p className="roster-empty">{t("No students in your classes yet.")}</p>
+          ) : null}
+        </section>
+        {creditOpen && creditSheet ? <CreditPreview school={school} sheet={creditSheet} onClose={() => setCreditOpen(false)} /> : null}
+      </div>
+    );
+  }
+
   return (
     <div className="sections assess">
       <WalletBanner token={token} className="no-print" />
@@ -1186,9 +2686,18 @@ function Marks({ token, school }) {
           </div>
           <AssessGraphic />
         </header>
-        <Field label="Title" value={title} onChange={setTitle} />
-        <Field label="Over" value={maxScore} onChange={setMaxScore} />
-        <Field label="Assessment date" value={assessmentDate} onChange={setAssessmentDate} placeholder="2026-10-16" />
+        <p className="muted span">{t("Add as many assessments as this subject needs. The final mark uses every one.")}</p>
+        <div className="span sections">
+          {drafts.map((row, index) => (
+            <div className="form-grid" key={row.key}>
+              <Field label="Title" value={row.title} onChange={(value) => updateDraft(index, { title: value })} />
+              <Field label="Over" value={row.maxScore} onChange={(value) => updateDraft(index, { maxScore: value })} />
+              <Field label="Assessment date" value={row.date} onChange={(value) => updateDraft(index, { date: value })} placeholder="2026-10-16" />
+              {!editingId && drafts.length > 1 ? <button className="danger" type="button" onClick={() => setDrafts((current) => current.filter((item) => item.key !== row.key))}>{t("Remove assessment")}</button> : null}
+            </div>
+          ))}
+        </div>
+        <TermField value={assessmentTerm} onChange={setAssessmentTerm} />
         <label className="field">Class
           <select value={classId} onChange={(event) => setClassId(event.target.value)}>
             {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
@@ -1197,16 +2706,66 @@ function Marks({ token, school }) {
         <label className="field">Subject
           <select value={subjectId} onChange={(event) => setSubjectId(event.target.value)}>
             {listed.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
-            {listed.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
+            {listed.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
           </select>
         </label>
         <div className="actions">
           <button className="solid" type="submit"><Icon name="pen" />{editingId ? "Save changes" : "Create assessment"}</button>
-          {editingId ? <button className="ghost" type="button" onClick={() => setEditingId(null)}>{t("Cancel edit")}</button> : null}
+          {editingId ? <button className="ghost" type="button" onClick={() => { setEditingId(null); setDrafts([blankDraft()]); }}>{t("Cancel edit")}</button> : null}
         </div>
       </form>
-      <div className="assess-board no-print">
-        {assessments.map((item) => (
+      <div className="sections no-print">
+        <div className="form-grid">
+          <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+        </div>
+        <header className="roster-head">
+          <div>
+            <p className="kicker"><Icon name="book" />{t("Assessment list")}</p>
+            <h2>{t("Assessments")}</h2>
+            <p className="muted">{t("All assessments, with the date and the term.")}</p>
+          </div>
+          <div className="chips">
+            <button type="button" className={assessView === "cards" ? "on" : ""} onClick={() => setAssessView("cards")}>{t("Cards")}</button>
+            <button type="button" className={assessView === "list" ? "on" : ""} onClick={() => setAssessView("list")}>{t("List")}</button>
+          </div>
+        </header>
+        {assessView === "list" ? (
+          assessmentList.length === 0 ? <p className="roster-empty">{t("No assessments yet.")}</p> : (
+            <div className="assess-list">
+              {assessmentList.map((item, index) => (
+                <article key={item._id} className={`assess-line${selected === item._id ? " on" : ""}`}>
+                  <span className="roster-no">{index + 1}</span>
+                  <div className="assess-line-copy">
+                    <strong>{item.title}</strong>
+                    <ul className="assess-facts">
+                      <li><Icon name="graduate" />{item.classRoom?.name || t("Class")}</li>
+                      <li><Icon name="book" />{item.subject?.name || t("Subject")}</li>
+                      <li><Icon name="calendar" />{item.date ? prettyKey(dayKey(item.date)) : "—"}</li>
+                      <li>{termLabel(item.term)}</li>
+                      <li>{t("Over")} {item.maxScore}</li>
+                    </ul>
+                  </div>
+                  <div className="roster-actions">
+                    <button className="ghost" type="button" onClick={() => setSelected(item._id)}>{selected === item._id ? t("Selected") : t("Open marks")}</button>
+                    <button className="ghost" type="button" onClick={() => { setEditingId(item._id); setAssessmentTerm(storedTerm(item.term)); setDrafts([blankDraft({ title: item.title, maxScore: String(item.maxScore), date: item.date ? isoDay(new Date(item.date)) : isoDay(new Date()) })]); if (item.classRoom?._id) setClassId(item.classRoom._id); if (item.subject?._id) setSubjectId(item.subject._id); }}><Icon name="pen" />{t("Edit")}</button>
+                    <button className="danger" type="button" onClick={() => {
+                      if (!window.confirm(t("Delete {name}? The saved marks will be removed too.", { name: item.title }))) return;
+                      act(async () => {
+                        await api(`/marks/assessments/${item._id}`, { method: "DELETE", token });
+                        if (selected === item._id) setSelected(null);
+                        await load();
+                      }, t("Assessment deleted"), `${item.title} and its marks were removed.`);
+                    }}>{t("Delete")}</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )
+        ) : assessmentGroups.map((group) => (
+          <section key={group.key} className="sections">
+            <p className="kicker">{group.className} · {t("{count} assessments in {subject}", { count: group.items.length, subject: group.subject })}</p>
+            <div className="assess-board">
+        {group.items.map((item) => (
           <article key={item._id} className={`assess-card${selected === item._id ? " on" : ""}`}>
             <div className="assess-art">
               <span className="assess-mark"><Icon name="pen" /></span>
@@ -1216,14 +2775,13 @@ function Marks({ token, school }) {
             <div className="assess-copy">
               <h2>{item.title}</h2>
               <ul className="assess-facts">
-                <li><Icon name="book" />{item.subject?.name || "Subject"}</li>
+                <li><Icon name="book" />{subjectLabel(item.subject) || "Subject"} · {termLabel(item.term)}</li>
                 <li><Icon name="graduate" />{item.classRoom?.name || "Class"}</li>
                 {item.date ? <li><Icon name="calendar" />{isoDay(new Date(item.date))}</li> : null}
               </ul>
               <div className="actions">
                 <button className="ghost" type="button" onClick={() => setSelected(item._id)}><Icon name="book" />{selected === item._id ? "Selected" : t("Open marks")}</button>
-                <button className="solid" type="button" onClick={() => notifyParents(item._id)}><Icon name="message" />{t("Notify parents")}</button>
-                <button className="ghost" type="button" onClick={() => { setEditingId(item._id); setTitle(item.title); setMaxScore(String(item.maxScore)); setAssessmentDate(item.date ? isoDay(new Date(item.date)) : isoDay(new Date())); if (item.classRoom?._id) setClassId(item.classRoom._id); if (item.subject?._id) setSubjectId(item.subject._id); }}><Icon name="pen" />{t("Edit")}</button>
+                <button className="ghost" type="button" onClick={() => { setEditingId(item._id); setAssessmentTerm(storedTerm(item.term)); setDrafts([blankDraft({ title: item.title, maxScore: String(item.maxScore), date: item.date ? isoDay(new Date(item.date)) : isoDay(new Date()) })]); if (item.classRoom?._id) setClassId(item.classRoom._id); if (item.subject?._id) setSubjectId(item.subject._id); }}><Icon name="pen" />{t("Edit")}</button>
                 <button className="danger" type="button" onClick={() => {
                   if (!window.confirm(t("Delete {name}? The saved marks will be removed too.", { name: item.title }))) return;
                   act(async () => {
@@ -1236,118 +2794,164 @@ function Marks({ token, school }) {
             </div>
           </article>
         ))}
+            </div>
+          </section>
+        ))}
       </div>
-      {selected ? (
+      {selected && openAssessment?.type !== "exam" ? (
         <section className="roster assess-sheet no-print">
           <header className="roster-head">
             <div>
               <p className="kicker"><Icon name="graduate" />{t("Sheet")}</p>
               <h2>{t("Students and parent phones")}</h2>
               {openAssessment ? <p className="muted">{openAssessment.title} · {openAssessment.subject?.name || "Subject"} · {openAssessment.classRoom?.name || "Class"}</p> : null}
-              <p className="muted">{t("Save the sheet first. Notify parents after it is saved.")}</p>
             </div>
             <span className="roster-count">{students.length}</span>
           </header>
+          <section className="range-panel">
+            <header className="range-head">
+              <h3>{t("Mark ranges")}</h3>
+              <p>{t("Set the ranges in this assessment's marks. The first range that contains the mark fills the comment.")}</p>
+            </header>
+            <div className="range-board">
+              {ranges.map((row, index) => (
+                <article className="range-card" key={row.key}>
+                  <div className="range-card-top">
+                    <span className="range-index">{index + 1}</span>
+                    {ranges.length > 1 ? <button className="danger" type="button" onClick={() => setRanges((current) => current.filter((item) => item.key !== row.key))}>{t("Remove range")}</button> : null}
+                  </div>
+                  <div className="range-fields">
+                    <Field label="From mark" value={row.from} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, from: value } : item))} />
+                    <Field label="To mark" value={row.to} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, to: value } : item))} />
+                  </div>
+                  <Field label="Comment" value={row.comment} onChange={(value) => setRanges((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, comment: value } : item))} />
+                </article>
+              ))}
+            </div>
+            <div className="actions">
+              <button className="ghost" type="button" onClick={() => setRanges((current) => [...current, blankRange()])}>{t("Add a range")}</button>
+              <button className="solid" type="button" onClick={saveRanges}>{t("Save ranges")}</button>
+            </div>
+          </section>
+          <p className="muted">{t("A student who did not attend is saved as 0. Write the reason.")}</p>
+          <ValidationAlert message={students.some((student) => attendance[student._id] !== "no" && markIssue(marks[student._id], openAssessment?.maxScore)) ? "A mark cannot be negative or above the total." : ""} />
           <table className="board roster-table">
             <thead>
-              <tr><th>{t("No.")}</th><th>{t("Student")}</th><th>{t("Parent phone")}</th><th>{t("Marks")}</th><th>{t("Comment")}</th></tr>
+              <tr><th>{t("No.")}</th><th>{t("Student")}</th><th>{t("Parent phone")}</th><th>{t("Marks")}</th><th>{t("Comment")}</th><th>{t("Attended")}</th><th>{t("Reason")}</th></tr>
             </thead>
             <tbody>
-              {students.map((student, index) => (
+              {students.map((student, index) => {
+                const missed = attendance[student._id] === "no";
+                return (
                 <tr key={student._id}>
                   <td data-label="No."><span className="roster-no">{index + 1}</span></td>
                   <td data-label="Student" className="roster-name">{student.fullName}</td>
-                  <td data-label="Parent phone" className="roster-phone">{parentOf(student)?.phone || "No phone"}</td>
-                  <td data-label="Marks"><input aria-label={t("Marks")} inputMode="decimal" value={marks[student._id] || ""} onChange={(event) => setMarks({ ...marks, [student._id]: event.target.value })} /></td>
-                  <td data-label="Comment"><input aria-label={t("Comment")} value={comments[student._id] || ""} onChange={(event) => setComments({ ...comments, [student._id]: event.target.value })} /></td>
+                  <td data-label="Parent phone" className="roster-phone">{localPhone(parentOf(student)?.phone) || t("No phone")}</td>
+                  <td data-label="Marks"><input disabled={missed} className={!missed && markIssue(marks[student._id], openAssessment?.maxScore) ? "invalid" : undefined} aria-invalid={!missed && markIssue(marks[student._id], openAssessment?.maxScore) ? true : undefined} aria-label={t("Marks")} inputMode="decimal" value={missed ? "0" : (marks[student._id] || "")} onChange={(event) => setStudentMark(student._id, event.target.value)} /></td>
+                  <td data-label="Comment"><input disabled={missed} aria-label={t("Comment")} value={missed ? "" : (comments[student._id] || "")} onChange={(event) => setComments({ ...comments, [student._id]: event.target.value })} /></td>
+                  <td data-label={t("Attended")}>
+                    <select aria-label={t("Attended")} value={missed ? "no" : "yes"} onChange={(event) => setAttend(student._id, event.target.value)}>
+                      <option value="yes">{t("Attended")}</option>
+                      <option value="no">{t("Did not attend")}</option>
+                    </select>
+                  </td>
+                  <td data-label={t("Reason")}><input aria-label={t("Reason")} maxLength={160} disabled={!missed} placeholder={missed ? t("Reason") : ""} value={reasons[student._id] || ""} onChange={(event) => setReasons({ ...reasons, [student._id]: event.target.value })} /></td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           <div className="actions assess-save">
-            <button className="solid" type="button" onClick={() => act(() => api(`/marks/assessments/${selected}/marks`, { method: "POST", token, body: { marks: students.map((student) => ({ studentId: student._id, score: Number(marks[student._id] || 0), comment: comments[student._id] })) } }), "Sheet saved", "Marks and comments are stored. You can notify parents now.")}><Icon name="check" />{t("Save sheet")}</button>
-            <button className="solid" type="button" onClick={() => notifyParents(selected)}><Icon name="message" />{t("Notify parents")}</button>
+            <button className="solid" type="button" onClick={() => { const rows = sheetMarks(); if (!rows) return; act(() => api(`/marks/assessments/${selected}/marks`, { method: "POST", token, body: { marks: rows } }), "Sheet saved", "Marks and comments are stored."); }}><Icon name="check" />{t("Save sheet")}</button>
           </div>
         </section>
       ) : null}
-      <section className="sections">
-        <ReportBar
-          period={period}
-          onPeriod={choosePeriod}
-          fromDate={fromDate}
-          onFrom={(value) => { setPeriod("custom"); setFromDate(value); }}
-          toDate={toDate}
-          onTo={(value) => { setPeriod("custom"); setToDate(value); }}
-          search={search}
-          onSearch={(value) => { setSearch(value); setReportStudentId(""); }}
-          names={nameOptions}
-          onPick={(item) => setReportStudentId(item.id)}
-          extra={(
-            <label className="field">Class
-              <select value={historyClassId} onChange={(event) => setHistoryClassId(event.target.value)}>
-                <option value="">{t("Select a class")}</option>
-                {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
-              </select>
-            </label>
-          )}
-        />
-        <div className="report-filters no-print">
-          <Field label="Academic year" value={reportYear} onChange={setReportYear} placeholder="2026" />
-          <label className="field">Term
-            <select value={reportTerm} onChange={(event) => setReportTerm(event.target.value)}>
-              <option value="1">{t("Term 1")}</option>
-              <option value="2">{t("Term 2")}</option>
-              <option value="3">{t("Term 3")}</option>
-              <option value="annual">{t("Annual")}</option>
+      <section className="panel sections no-print">
+        <header className="assess-head">
+          <span className="assess-mark"><Icon name="award" /></span>
+          <div>
+            <p className="kicker">{t("Subject credits")}</p>
+            <h2>{t("Credited marks")}</h2>
+          </div>
+        </header>
+        <p className="muted">{t("1 credit equals 10 marks.")}</p>
+        <div className="form-grid">
+          <label className="field">Class
+            <select value={creditClassId} onChange={(event) => setCreditClassId(event.target.value)}>
+              {classes.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
             </select>
           </label>
-          <button className="solid" type="button" onClick={openOfficial}><Icon name="award" />{t("Academic performance report")}</button>
+          <label className="field">Subject
+            <select value={creditSubjectId} onChange={(event) => setCreditSubjectId(event.target.value)}>
+              {creditSubjects.length === 0 ? <option value="">{t("No subjects on this class")}</option> : null}
+              {creditSubjects.map((item) => <option key={item._id} value={item._id}>{subjectLabel(item)}</option>)}
+            </select>
+          </label>
+          <TermField value={creditTerm} onChange={setCreditTerm} />
+        <ReportSpan year={sheetYear} onYear={setSheetYear} from={sheetFrom} onFrom={setSheetFrom} to={sheetTo} onTo={setSheetTo} />
+          <Field label="Subject credits" value={creditDraft} onChange={setCreditDraft} placeholder="6" />
+          <div className="actions">
+            <button className="ghost" type="button" onClick={saveSubjectCredits}>{t("Save credits")}</button>
+          </div>
         </div>
-        <div className="roster report-sheet">
-          <ReportLogos school={school} />
-          <header className="roster-head">
-            <div>
-              <p className="kicker"><Icon name="award" />{t("IshuriApp")}</p>
-              <h2>{t("Assessment report")}</h2>
-              <p className="muted">{school?.name || "School"} · {historyClass?.name || "All classes"} · {rangeLabel(period, fromDate, toDate)}{query ? ` · ${search.trim()}` : ""}</p>
-              <p className="muted">{reportRows.length === 1 ? "1 mark" : `${reportRows.length} marks`}{reportRows.length ? ` · average ${average}%` : ""}</p>
-            </div>
-            <button className="solid no-print" type="button" onClick={() => {
-              if (!reportIsFiltered({ classId: historyClassId, fromDate, toDate, search })) {
-                notify(t("Choose a filter"), t("Select a class, or set the dates or a student name, before printing."), "bad");
-                return;
-              }
-              window.print();
-            }}><Icon name="book" />{t("Print register")}</button>
-          </header>
-          {datesFlipped ? <p className="roster-empty">{t("Choose an end date on or after the start date.")}</p> : reportRows.length === 0 ? <p className="roster-empty">{t("No assessments in this period.")}</p> : (
-            <table className="board roster-table report-table premium-table">
-              <thead>
-                <tr><th>{t("No.")}</th><th>{t("Date")}</th><th>{t("Student")}</th><th>{t("Subject")}</th><th>{t("Assessment")}</th><th>{t("Score")}</th><th>{t("Comment")}</th></tr>
-              </thead>
-              <tbody>
-                {reportRows.map((row, index) => (
-                  <tr key={row.id}>
-                    <td data-label="No."><span className="roster-no">{index + 1}</span></td>
-                    <td data-label="Date">{prettyKey(row.day)}</td>
-                    <td data-label="Student" className="roster-name">{row.student}</td>
-                    <td data-label="Subject">{row.subject}</td>
-                    <td data-label="Assessment">{row.title}</td>
-                    <td data-label="Score" className="num">{row.score == null || row.score === "" ? "—" : row.score}/{row.total}</td>
-                    <td data-label="Comment">{row.comment || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {creditSubject && wholeCredits(creditSubject.credits) ? (
+          <p>{t("{subject} is marked over {total}.", { subject: creditSubject.name, total: subjectTotal(creditSubject.credits) })}</p>
+        ) : (
+          <p>{t("Set the credits before you download.")}</p>
+        )}
+        {creditSheet?.tests.length ? <p className="muted">{creditSheet.termLabel} · {t("Assessments done")}: {assessmentLine(creditSheet)} · {t("A blank mark counts as 0.")}</p> : <p className="muted">{assessments.some((item) => String(item.classRoom?._id || item.classRoom) === String(creditRoom?._id) && String(item.subject?._id || item.subject) === String(creditSubject?._id) && item.type !== "exam") ? t("No assessments in this term.") : t("Add at least one assessment for this subject first.")}</p>}
+        <div className="actions">
+          <button className="solid" type="button" onClick={() => { if (requireCreditSheet()) setCreditOpen(true); }}>{t("Print / Save PDF")}</button>
+          <button className="ghost" type="button" onClick={saveCreditExcel}>{t("Excel")}</button>
+          <button className="ghost" type="button" onClick={saveCreditWord}>{t("Word")}</button>
         </div>
+        {creditSheet?.tests.length ? (
+          creditSheet.rows.length ? <CreditTable sheet={creditSheet} /> : <p className="roster-empty">{t("No students in your classes yet.")}</p>
+        ) : null}
       </section>
-      {official ? <OfficialPreview report={official} orientation={orientation} onOrientation={setOrientation} onClose={() => setOfficial(null)} /> : null}
+      {creditOpen && creditSheet ? <CreditPreview school={school} sheet={creditSheet} onClose={() => setCreditOpen(false)} /> : null}
     </div>
   );
 }
 
 const BANDS = { normal: "Normal", medium: "Medium", abnormal: "Abnormal", at_risk: t("At risk") };
+
+function CaseRoll({ students }) {
+  return (
+    <ol className="case-register">
+      {students.map((group) => (
+        <li key={group.id}>
+          <div className="case-who">
+            <strong>{group.name}</strong>
+            <span>{[group.code, group.remaining === "—" ? "" : `${group.remaining} remaining`].filter(Boolean).join(" · ")}</span>
+          </div>
+          <ul>
+            {group.cases.map((item) => (
+              <li key={item._id}>
+                <strong>{prettyKey(dayKey(item.occurredAt || item.createdAt))} · {t(item.title)}</strong>
+                {item.description ? <p>{t(item.description)}</p> : null}
+                <p className="case-detail">Deducted {item.marksLost || 0} · Remaining {item.scoreAfter ?? "—"} · {item.parentNotifiedAt ? "Parent notified" : "Parent not notified"}{item.reportedBy?.fullName ? ` · ${item.reportedBy.fullName}` : ""}</p>
+              </li>
+            ))}
+          </ul>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+const CASE_MENU = [
+  ["Late to assembly", "The student arrived after assembly had started."],
+  ["Late to class", "The student arrived after the lesson had started."],
+  ["Absent without permission", "The student missed class without permission."],
+  ["Incorrect uniform", "The student came without the required uniform."],
+  ["Noise in class", "The student disrupted the class."],
+  ["Fighting", "The student fought with another student."],
+  ["Disrespect to staff", "The student spoke rudely to a staff member."],
+  ["Phone in class", "The student used a phone during lessons."],
+  ["Left school without permission", "The student left the school grounds without permission."],
+  ["Incomplete work", "The student did not complete the assigned work."],
+];
 
 function Discipline({ token, school }) {
   const [items, setItems] = useState([]);
@@ -1375,6 +2979,7 @@ function Discipline({ token, school }) {
   const [reportStudentId, setReportStudentId] = useState("");
   const [official, setOfficial] = useState(null);
   const [orientation, setOrientation] = useState("portrait");
+  const [registerOpen, setRegisterOpen] = useState(false);
 
   async function loadBase() {
     const [cases, rooms, sheet, roster] = await Promise.all([
@@ -1430,7 +3035,6 @@ function Discipline({ token, school }) {
 
   const datesFlipped = Boolean(fromDate && toDate && fromDate > toDate);
   const reportQuery = search.trim().toLowerCase();
-  const reportClass = classes.find((item) => item._id === reportClassId);
   const reportNames = (reportClassId ? directory.filter((student) => String(student.classRoom?._id || "") === reportClassId) : directory)
     .map((student) => ({ id: student._id, name: student.fullName, detail: student.classRoom?.name || student.studentCode || "", classId: student.classRoom?._id || "" }));
   const standing = datesFlipped ? [] : scores.filter((row) => {
@@ -1445,6 +3049,7 @@ function Discipline({ token, school }) {
   }).sort((a, b) => (a.student?.fullName || "").localeCompare(b.student?.fullName || ""));
   const cases = datesFlipped ? [] : items.filter((item) => {
     const day = dayKey(item.occurredAt || item.createdAt);
+    if (/^\d{4}$/.test(reportYear.trim()) && (!day || !day.startsWith(reportYear.trim()))) return false;
     if (fromDate && (!day || day < fromDate)) return false;
     if (toDate && (!day || day > toDate)) return false;
     const name = item.student?.fullName || "";
@@ -1455,7 +3060,6 @@ function Discipline({ token, school }) {
     const known = directory.find((student) => String(student._id) === String(item.student?._id));
     return known ? String(known.classRoom?._id || "") === reportClassId : false;
   }).sort((a, b) => (dayKey(b.occurredAt || b.createdAt)).localeCompare(dayKey(a.occurredAt || a.createdAt)) || (a.student?.fullName || "").localeCompare(b.student?.fullName || ""));
-  const marksTaken = cases.reduce((sum, item) => sum + Number(item.marksLost || 0), 0);
   const groupedCases = [];
   const seenCases = new Map();
   cases.forEach((item) => {
@@ -1475,6 +3079,18 @@ function Discipline({ token, school }) {
     }
     seenCases.get(id).cases.push(item);
   });
+  const classSheets = [];
+  const seenSheets = new Map();
+  groupedCases.forEach((group) => {
+    const name = group.className || t("Class");
+    if (!seenSheets.has(name)) {
+      const sheet = { name, students: [] };
+      seenSheets.set(name, sheet);
+      classSheets.push(sheet);
+    }
+    seenSheets.get(name).students.push(group);
+  });
+  classSheets.sort((left, right) => left.name.localeCompare(right.name));
 
   function openDisciplineReport() {
     if (!reportIsFiltered({ classId: reportClassId, fromDate, toDate, search })) {
@@ -1577,8 +3193,12 @@ function Discipline({ token, school }) {
           {selected ? (
             <form className="panel sections" onSubmit={(event) => {
               event.preventDefault();
+              const caseTitle = CASE_MENU.some((item) => item[0] === title) ? title : "";
+              const caseBody = CASE_MENU.some((item) => item[1] === description) ? description : "";
+              if (!caseTitle) return notify(t("Not completed"), t("Choose the case title."), "bad");
+              if (!caseBody) return notify(t("Not completed"), t("Choose what happened."), "bad");
               act(async () => {
-                const data = await api("/discipline", { method: "POST", token, body: { student: selected._id, title, description, category: "misconduct", marksLost: Number(marksLost || 0) } });
+                const data = await api("/discipline", { method: "POST", token, body: { student: selected._id, title: caseTitle, description: caseBody, category: "misconduct", marksLost: Number(marksLost || 0) } });
                 setTitle("");
                 setDescription("");
                 await loadBase();
@@ -1588,9 +3208,24 @@ function Discipline({ token, school }) {
             }}>
               <h2>{selected.fullName}</h2>
               {historyScores.map((row) => <p key={row._id}>{row.term} {row.academicYear}: {row.score}{row.maxMarks != null ? ` / ${row.maxMarks}` : ""}</p>)}
-              {history.map((item) => <p key={item._id}><strong>{item.title}</strong> {item.marksLost ? `−${item.marksLost}` : ""} {item.scoreAfter != null ? `· ${item.scoreAfter} left` : ""}</p>)}
-              <Field label="Case title" value={title} onChange={setTitle} placeholder={t("Late to assembly")} />
-              <Field label="What happened" value={description} onChange={setDescription} multiline />
+              {history.map((item) => <p key={item._id}><strong>{t(item.title)}</strong> {item.marksLost ? `−${item.marksLost}` : ""} {item.scoreAfter != null ? `· ${item.scoreAfter} left` : ""}</p>)}
+              <label className="field">{t("Case title")}
+                <select value={title} onChange={(event) => {
+                  const next = event.target.value;
+                  setTitle(next);
+                  const pair = CASE_MENU.find((item) => item[0] === next);
+                  if (pair) setDescription(pair[1]);
+                }}>
+                  <option value="">{t("Choose the case title.")}</option>
+                  {CASE_MENU.map(([label]) => <option key={label} value={label}>{t(label)}</option>)}
+                </select>
+              </label>
+              <label className="field">{t("What happened")}
+                <select value={description} onChange={(event) => setDescription(event.target.value)}>
+                  <option value="">{t("Choose what happened.")}</option>
+                  {CASE_MENU.map(([, label]) => <option key={label} value={label}>{t(label)}</option>)}
+                </select>
+              </label>
               <Field label="Marks to subtract" value={marksLost} onChange={setMarksLost} />
               <button className="solid" type="submit">{t("Subtract and notify parent")}</button>
             </form>
@@ -1621,49 +3256,56 @@ function Discipline({ token, school }) {
         <div className="report-filters no-print">
           <Field label="Academic year" value={reportYear} onChange={setReportYear} placeholder="2026" />
           <Field label="Term" value={reportTerm} onChange={setReportTerm} placeholder={t("Term 1")} />
-          <button className="solid" type="button" onClick={openDisciplineReport}>{t("Discipline report")}</button>
+          <button className="solid" type="button" onClick={openDisciplineReport}>{t("Discipline cases")}</button>
         </div>
-        <div className="roster report-sheet">
-          <ReportLogos school={school} />
-          <header className="roster-head">
-            <div>
-              <p className="kicker">{t("IshuriApp")}</p>
-              <h2>{t("Discipline report")}</h2>
-              <p className="muted">{school?.name || "School"} · {reportClass?.name || "All classes"} · {rangeLabel(period, fromDate, toDate)}{reportQuery ? ` · ${search.trim()}` : ""}</p>
-              <p className="muted">{groupedCases.length === 1 ? "1 student" : `${groupedCases.length} students`} · {cases.length === 1 ? "1 case" : `${cases.length} cases`} · {marksTaken === 1 ? "1 mark" : `${marksTaken} marks`} subtracted</p>
+        {datesFlipped ? <p className="roster-empty">{t("Choose an end date on or after the start date.")}</p> : classSheets.length === 0 ? <p className="roster-empty">{t("No discipline cases in this period.")}</p> : (
+          <>
+            <div className="actions no-print">
+              <button className="solid" type="button" onClick={() => {
+                if (!reportIsFiltered({ classId: reportClassId, fromDate, toDate, search })) {
+                  notify(t("Choose a filter"), t("Select a class, or set the dates or a student name, before printing."), "bad");
+                  return;
+                }
+                setRegisterOpen(true);
+              }}>{t("Print / Save PDF")}</button>
             </div>
-            <button className="solid no-print" type="button" onClick={() => {
-              if (!reportIsFiltered({ classId: reportClassId, fromDate, toDate, search })) {
-                notify(t("Choose a filter"), t("Select a class, or set the dates or a student name, before printing."), "bad");
-                return;
-              }
-              window.print();
-            }}>{t("Print register")}</button>
-          </header>
-          {datesFlipped ? <p className="roster-empty">{t("Choose an end date on or after the start date.")}</p> : groupedCases.length === 0 ? <p className="roster-empty">{t("No discipline cases in this period.")}</p> : (
-            <ol className="case-register">
-              {groupedCases.map((group) => (
-                <li key={group.id}>
-                  <div className="case-who">
-                    <strong>{group.name}</strong>
-                    <span>{[group.code, group.className, group.remaining === "—" ? "" : `${group.remaining} remaining`].filter(Boolean).join(" · ")}</span>
-                  </div>
-                  <ul>
-                    {group.cases.map((item) => (
-                      <li key={item._id}>
-                        <strong>{prettyKey(dayKey(item.occurredAt || item.createdAt))} · {item.title}</strong>
-                        {item.description ? <p>{item.description}</p> : null}
-                        <p className="case-detail">Deducted {item.marksLost || 0} · Remaining {item.scoreAfter ?? "—"} · {item.parentNotifiedAt ? "Parent notified" : "Parent not notified"}{item.reportedBy?.fullName ? ` · ${item.reportedBy.fullName}` : ""}</p>
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              ))}
-            </ol>
-          )}
-        </div>
+            {classSheets.map((sheet) => {
+              const sheetCases = sheet.students.reduce((sum, group) => sum + group.cases.length, 0);
+              const sheetMarks = sheet.students.reduce((sum, group) => sum + group.cases.reduce((marks, item) => marks + Number(item.marksLost || 0), 0), 0);
+              return (
+                <div className="roster report-sheet" key={sheet.name}>
+                  <ReportLogos school={school} />
+                  <header className="roster-head">
+                    <div>
+                      <p className="kicker">{t("IshuriApp")}</p>
+                      <h2>{sheet.name}</h2>
+                      <p className="muted">{school?.name || "School"} · {t("Discipline cases")} · {rangeLabel(period, fromDate, toDate)}{reportQuery ? ` · ${search.trim()}` : ""}</p>
+                      <p className="muted">{sheet.students.length === 1 ? "1 student" : `${sheet.students.length} students`} · {sheetCases === 1 ? "1 case" : `${sheetCases} cases`} · {sheetMarks === 1 ? "1 mark" : `${sheetMarks} marks`} subtracted</p>
+                    </div>
+                  </header>
+                  <CaseRoll students={sheet.students} />
+                </div>
+              );
+            })}
+          </>
+        )}
       </section>
       {official ? <OfficialPreview report={official} orientation={orientation} onOrientation={setOrientation} onClose={() => setOfficial(null)} /> : null}
+      {registerOpen ? (
+        <ReportPrint
+          title={t("Discipline cases")}
+          school={school}
+          onClose={() => setRegisterOpen(false)}
+          bare
+        >
+          {classSheets.map((sheet) => (
+            <section className="print-class" key={sheet.name}>
+              <PrintHeading school={school} title={t("Discipline cases")} note={`${sheet.name} · ${rangeLabel(period, fromDate, toDate)}`} />
+              <CaseRoll students={sheet.students} />
+            </section>
+          ))}
+        </ReportPrint>
+      ) : null}
     </div>
   );
 }
@@ -1682,6 +3324,137 @@ function payloadFrom(draft) {
   };
 }
 
+function AccountantSettings({ session, onSession }) {
+  const user = session.user || {};
+  const [form, setForm] = useState({
+    fullName: user.fullName || "",
+    email: user.email || "",
+    phone: localPhone(user.phone) || takePhone(user.phone),
+    title: user.title || "",
+    gender: user.gender || "",
+    bio: user.bio || "",
+    avatarUrl: user.avatarUrl || "",
+    whatsapp: localPhone(user.socials?.whatsapp) || takePhone(user.socials?.whatsapp),
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const set = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  async function onPhoto(file) {
+    if (!file) return;
+    const uploaded = await act(() => uploadFile(session.token, "avatars", file), "Uploaded", t("The image is ready to save with the profile."));
+    if (uploaded?.url) set("avatarUrl", uploaded.url);
+  }
+
+  async function save(event) {
+    event.preventDefault();
+    setSubmitted(true);
+    if (!form.fullName.trim()) return notify(t("Not completed"), t("Type your full name."), "bad");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) return notify(t("Not completed"), t("Type a valid email."), "bad");
+    const phone = form.phone.trim() ? localPhone(form.phone) : "";
+    const whatsapp = form.whatsapp.trim() ? localPhone(form.whatsapp) : "";
+    if ((form.phone.trim() && !phone) || (form.whatsapp.trim() && !whatsapp)) {
+      return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
+    }
+    const changingPassword = Boolean(form.currentPassword || form.newPassword || form.confirmPassword);
+    if (changingPassword) {
+      if (!form.currentPassword) return notify(t("Not completed"), t("The current password is not correct."), "bad");
+      if (form.newPassword.length < 8) return notify(t("Not completed"), t("The new password needs at least 8 characters."), "bad");
+      if (form.newPassword !== form.confirmPassword) return notify(t("Not completed"), t("The new passwords do not match."), "bad");
+    }
+    const body = {
+      fullName: form.fullName.trim(),
+      email: form.email.trim(),
+      phone,
+      title: form.title.trim(),
+      gender: form.gender,
+      bio: form.bio.trim(),
+      avatarUrl: form.avatarUrl,
+      socials: { ...(user.socials || {}), whatsapp },
+    };
+    if (changingPassword) {
+      body.currentPassword = form.currentPassword;
+      body.newPassword = form.newPassword;
+      body.confirmPassword = form.confirmPassword;
+    }
+    await act(async () => {
+      const data = await api("/auth/me", { method: "PATCH", token: session.token, body });
+      const next = { ...session, user: data.user };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+      onSession(next);
+      setForm((current) => ({
+        ...current,
+        fullName: data.user.fullName || "",
+        email: data.user.email || "",
+        phone: localPhone(data.user.phone) || "",
+        title: data.user.title || "",
+        gender: data.user.gender || "",
+        bio: data.user.bio || "",
+        avatarUrl: data.user.avatarUrl || "",
+        whatsapp: localPhone(data.user.socials?.whatsapp) || "",
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      }));
+    }, t("Saved"), t("Your profile is saved."));
+  }
+
+  return (
+    <form className="acct-settings" onSubmit={save}>
+      <section className="acct-settings-card">
+        <header>
+          <h2>{t("Settings")}</h2>
+          <p>{t("Change your name, email, phone and password.")}</p>
+        </header>
+        <div className="acct-settings-hero">
+          {form.avatarUrl ? <img src={media(form.avatarUrl)} alt="" /> : <span>{accountInitials(form.fullName)}</span>}
+          <div>
+            <strong>{form.fullName || t(ROLE_LABEL[session.user?.role] || "Director")}</strong>
+            <em>{session.school?.name}</em>
+            <label className="acct-act is-update">
+              <Icon name="image" />
+              {t("Profile photo")}
+              <input hidden type="file" accept="image/*" onChange={(event) => onPhoto(event.target.files?.[0])} />
+            </label>
+          </div>
+        </div>
+        <div className="acct-settings-grid">
+          <Field label="Full name" value={form.fullName} autoComplete="name" submitted={submitted} error={form.fullName.trim() ? "" : "Type your full name."} onChange={(value) => set("fullName", value)} />
+          <Field label="Email" type="email" value={form.email} autoComplete="email" submitted={submitted} error={/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) ? "" : "Type a valid email."} onChange={(value) => set("email", value)} />
+          <Field label="Phone" value={form.phone} autoComplete="tel" placeholder="0788000000" submitted={submitted} error={phoneIssue(form.phone)} onChange={(value) => set("phone", takePhone(value))} />
+          <Field label="WhatsApp" value={form.whatsapp} autoComplete="tel" placeholder="0788000000" submitted={submitted} error={phoneIssue(form.whatsapp)} onChange={(value) => set("whatsapp", takePhone(value))} />
+          <Field label="Title" value={form.title} onChange={(value) => set("title", value)} />
+          <label className="field">{t("Gender")}
+            <select value={form.gender} onChange={(event) => set("gender", event.target.value)}>
+              <option value="">—</option>
+              <option value="female">{t("Female")}</option>
+              <option value="male">{t("Male")}</option>
+              <option value="other">{t("Other")}</option>
+            </select>
+          </label>
+          <div className="span"><Field label="Bio" value={form.bio} multiline onChange={(value) => set("bio", value)} /></div>
+        </div>
+      </section>
+      <section className="acct-settings-card">
+        <header>
+          <h2>{t("Password")}</h2>
+          <p>{t("Leave the password fields empty to keep the current password.")}</p>
+        </header>
+        <div className="acct-settings-grid">
+          <div className="span"><Field label="Current password" type="password" value={form.currentPassword} autoComplete="current-password" onChange={(value) => set("currentPassword", value)} /></div>
+          <Field label="New password" type="password" value={form.newPassword} autoComplete="new-password" onChange={(value) => set("newPassword", value)} />
+          <Field label="Confirm password" type="password" value={form.confirmPassword} autoComplete="new-password" onChange={(value) => set("confirmPassword", value)} />
+        </div>
+      </section>
+      <div className="acct-settings-save">
+        <button className="solid" type="submit"><Icon name="check" />{t("Save")}</button>
+      </div>
+    </form>
+  );
+}
+
 function Profile({ session, onSession }) {
   const token = session.token;
   const [draft, setDraft] = useState(emptyDraft);
@@ -1692,12 +3465,13 @@ function Profile({ session, onSession }) {
   const [eventTitle, setEventTitle] = useState("");
   const [eventVenue, setEventVenue] = useState("");
   const [caption, setCaption] = useState("");
+  const [profileSubmitted, setProfileSubmitted] = useState(false);
   const set = (key, value) => setDraft((current) => ({ ...current, [key]: value }));
 
   function fill(school) {
     setDraft({
       name: school.name || "", type: school.type || "secondary", motto: school.motto || "", tagline: school.tagline || "", about: school.about || "", history: school.history || "", vision: school.vision || "", mission: school.mission || "", performanceSummary: school.performanceSummary || "",
-      programs: school.programs?.join(", ") || "", facilities: school.facilities?.join(", ") || "", email: school.email || "", phone: school.phone || "", whatsapp: school.whatsapp || "", visitingHours: school.visitingHours || "",
+      programs: school.programs?.join(", ") || "", facilities: school.facilities?.join(", ") || "", email: school.email || "", phone: localPhone(school.phone) || takePhone(school.phone), whatsapp: localPhone(school.whatsapp) || takePhone(school.whatsapp), visitingHours: school.visitingHours || "",
       province: school.location?.province || "", district: school.location?.district || "", sector: school.location?.sector || "", address: school.location?.address || "",
       establishedYear: school.establishedYear ? String(school.establishedYear) : "", studentCount: school.studentCount ? String(school.studentCount) : "", teacherCount: school.teacherCount ? String(school.teacherCount) : "", logoUrl: school.logoUrl || "", coverUrl: school.coverUrl || "",
     });
@@ -1752,8 +3526,8 @@ function Profile({ session, onSession }) {
       <Field label="Sector" value={draft.sector} onChange={(value) => set("sector", value)} />
       <Field label="Address" value={draft.address} onChange={(value) => set("address", value)} />
       <Field label="Email" value={draft.email} onChange={(value) => set("email", value)} />
-      <Field label="Phone" value={draft.phone} onChange={(value) => set("phone", value)} placeholder="250788000000" />
-      <Field label="WhatsApp" value={draft.whatsapp} onChange={(value) => set("whatsapp", value)} placeholder="250788000000" />
+      <Field label="Phone" value={draft.phone} submitted={profileSubmitted} error={phoneIssue(draft.phone)} onChange={(value) => set("phone", takePhone(value))} placeholder="0788000000" />
+      <Field label="WhatsApp" value={draft.whatsapp} submitted={profileSubmitted} error={phoneIssue(draft.whatsapp)} onChange={(value) => set("whatsapp", takePhone(value))} placeholder="0788000000" />
       <Field label="Visiting hours" value={draft.visitingHours} onChange={(value) => set("visitingHours", value)} />
     </div>
   );
@@ -1768,14 +3542,21 @@ function Profile({ session, onSession }) {
           <label className="ghost">{t("Upload logo")}<input hidden type="file" accept="image/*" onChange={(event) => onFile("logos", "logoUrl", event.target.files?.[0])} /></label>
         </div>
         {fields}
-        <button className="solid" type="button" onClick={() => act(async () => {
+        <button className="solid" type="button" onClick={() => {
+          setProfileSubmitted(true);
+          const phone = draft.phone.trim() ? localPhone(draft.phone) : "";
+          const whatsapp = draft.whatsapp.trim() ? localPhone(draft.whatsapp) : "";
+          if ((draft.phone.trim() && !phone) || (draft.whatsapp.trim() && !whatsapp)) return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
+          const body = payloadFrom({ ...draft, phone, whatsapp });
+          act(async () => {
           const data = missing
-            ? await api("/schools", { method: "POST", token, body: payloadFrom(draft) })
-            : await api("/schools/mine", { method: "PATCH", token, body: payloadFrom(draft) });
+            ? await api("/schools", { method: "POST", token, body })
+            : await api("/schools/mine", { method: "PATCH", token, body });
           fill(data.school);
           setMissing(false);
           await refreshSession();
-        }, missing ? "Submitted" : "Saved", missing ? "IshuriApp will review this school." : "The school website now shows these details.")}>{missing ? "Submit for approval" : "Save website profile"}</button>
+        }, missing ? "Submitted" : "Saved", missing ? "IshuriApp will review this school." : "The school website now shows these details.");
+        }}>{missing ? "Submit for approval" : "Save website profile"}</button>
       </section>
       {!missing ? (
         <>
@@ -1873,6 +3654,7 @@ function Publish({ token, school }) {
 function Messages({ token, role, school }) {
   const [phones, setPhones] = useState("");
   const [message, setMessage] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   if (role === "super_admin") {
     return (
       <section className="panel assess-create">
@@ -1890,12 +3672,18 @@ function Messages({ token, role, school }) {
   return (
     <form className="panel form-grid assess-create" onSubmit={(event) => {
       event.preventDefault();
+      setSubmitted(true);
+      const typed = phones.split(",").map((phone) => phone.trim()).filter(Boolean);
+      const ready = typed.map(localPhone);
+      if (!typed.length || ready.some((phone) => !phone)) return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
+      if (!message.trim()) return notify(t("Not completed"), t("Write the message first."), "bad");
+      if (message.trim().length > 160) return notify(t("Not completed"), t("Keep the message under 160 characters."), "bad");
       track((async () => {
         try {
           const sent = await api("/sms/send", {
             method: "POST",
             token,
-            body: { phones: phones.split(",").map((phone) => phone.trim()).filter(Boolean), message },
+            body: { phones: ready, message },
           });
           notify(t("Message sent"), sent.message || t("The notice was sent."));
           setMessage("");
@@ -1914,10 +3702,11 @@ function Messages({ token, role, school }) {
       </header>
       <WalletBanner token={token} className="span" />
       <p className="muted span">{t("Write the notice and the parent phone numbers. Each parent uses one message from the Message Wallet.")}</p>
-      <Field label="Phones, separated by commas" value={phones} onChange={setPhones} placeholder="250788000000" />
-      <Field label="Message" value={message} onChange={setMessage} multiline placeholder={t("Parents meeting Saturday 09:00.")} />
+      <Field label="Phones, separated by commas" value={phones} submitted={submitted} error={phones.split(",").map((item) => item.trim()).filter(Boolean).some((item) => !localPhone(item)) ? "The phone number must be 10 digits and start with 07." : ""} onChange={setPhones} placeholder="0788000000, 0792000000" />
+      <Field label="Message" value={message} maxLength={160} multiline onChange={(value) => setMessage(value.slice(0, 160))} placeholder={t("Parents meeting Saturday 09:00.")} />
+      <p className="muted span">{message.length}/160 · {t("A message stays within 160 characters.")}</p>
       <button className="solid" type="submit"><Icon name="message" />{t("Send message")}</button>
-      <p className="muted span">{t("Every number is sent as 250 followed by 9 digits, for example 250788000000. A number typed as 0795645441 is sent as 250795645441.")}</p>
+      <p className="muted span">{t("The phone number must be 10 digits and start with 07.")}</p>
     </form>
   );
 }
@@ -2106,14 +3895,18 @@ function Reports({ token }) {
   const [metric, setMetric] = useState("messages");
   const [grain, setGrain] = useState("day");
   const [query, setQuery] = useState("");
+  const [reportYear, setReportYear] = useState(String(new Date().getFullYear()));
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [report, setReport] = useState(null);
   useEffect(() => {
-    api(`/admin/reports?period=${period}`, { token }).then(setReport).catch((err) => notify(t("Not completed"), err.message, "bad"));
-  }, [period, token]);
+    const params = new URLSearchParams({ period, year: reportYear, from: fromDate, to: toDate });
+    api(`/admin/reports?${params.toString()}`, { token }).then(setReport).catch((err) => notify(t("Not completed"), err.message, "bad"));
+  }, [period, reportYear, fromDate, toDate, token]);
   const rows = (report?.items || []).filter((row) => (status === "all" || row.school.status === status) && (type === "all" || row.school.type === type) && (!query.trim() || row.school.name.toLowerCase().includes(query.trim().toLowerCase())));
   const ranked = [...rows].sort((a, b) => (b[metric] || 0) - (a[metric] || 0) || a.school.name.localeCompare(b.school.name));
   const max = Math.max(1, ...ranked.map((row) => row[metric] || 0));
-  const totals = report ? messageTotals(rows, grain, kigaliDay(new Date(report.from)), kigaliDay(new Date())) : [];
+  const totals = report ? messageTotals(rows, grain, kigaliDay(new Date(report.from)), kigaliDay(new Date(report.to || Date.now()))) : [];
   const messageTotal = totals.reduce((total, row) => total + row.messages, 0);
   const categories = sumCategories(rows);
   const sum = (key) => rows.reduce((total, row) => total + (row[key] || 0), 0);
@@ -2159,6 +3952,11 @@ function Reports({ token }) {
         <h2><Icon name="calendar" />{t("Period")}</h2>
         <p className="muted">{t("Week starts Monday. Month starts on the 1st. Year starts on 1 January. All dates are Africa/Kigali.")}</p>
         <div className="chips">{["week", "month", "year"].map((item) => <button key={item} type="button" className={period === item ? "on" : ""} onClick={() => setPeriod(item)}>{t(item[0].toUpperCase() + item.slice(1))}</button>)}</div>
+        <div className="form-grid">
+          <Field label="Year" type="number" value={reportYear} onChange={setReportYear} />
+          <Field label="From" type="date" value={fromDate} onChange={setFromDate} />
+          <Field label="To" type="date" value={toDate} onChange={setToDate} />
+        </div>
         <h2><Icon name="filter" />{t("Filter")}</h2>
         <p className="muted">{t("Totals and charts use only the schools that pass every filter.")}</p>
         <Field label="Search school" value={query} onChange={setQuery} placeholder={t("School name")} />
@@ -2268,6 +4066,7 @@ function Reports({ token }) {
 function Approvals({ token }) {
   const [items, setItems] = useState([]);
   const [director, setDirector] = useState({ fullName: "", email: "", password: "School@123", phone: "" });
+  const [submitted, setSubmitted] = useState(false);
   async function load() {
     const data = await api("/schools", { token });
     setItems(data.items || []);
@@ -2277,12 +4076,15 @@ function Approvals({ token }) {
     <div className="sections">
       <form className="panel form-grid" onSubmit={(event) => {
         event.preventDefault();
-        act(() => api("/admin/school-admins", { method: "POST", token, body: director }), t("Director created"), t("They can sign in and submit a school profile.")).then((ok) => { if (ok) setDirector({ ...director, fullName: "", email: "", phone: "" }); });
+        setSubmitted(true);
+        const phone = director.phone.trim() ? localPhone(director.phone) : "";
+        if (director.phone.trim() && !phone) return notify(t("Not completed"), t("The phone number must be 10 digits and start with 07."), "bad");
+        act(() => api("/admin/school-admins", { method: "POST", token, body: { ...director, phone } }), t("Director created"), t("They can sign in and submit a school profile.")).then((ok) => { if (ok) setDirector({ ...director, fullName: "", email: "", phone: "" }); });
       }}>
         <h2>{t("New school director")}</h2>
         <Field label="Full name" value={director.fullName} onChange={(value) => setDirector({ ...director, fullName: value })} />
         <Field label="Email" value={director.email} onChange={(value) => setDirector({ ...director, email: value })} />
-        <Field label="Phone" value={director.phone} onChange={(value) => setDirector({ ...director, phone: value })} placeholder="250788000000" />
+        <Field label="Phone" value={director.phone} submitted={submitted} error={phoneIssue(director.phone)} onChange={(value) => setDirector({ ...director, phone: takePhone(value) })} placeholder="0788000000" />
         <Field label="Password" type="password" value={director.password} onChange={(value) => setDirector({ ...director, password: value })} autoComplete="new-password" />
         <button className="solid" type="submit">{t("Create director account")}</button>
       </form>

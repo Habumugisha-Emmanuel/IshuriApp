@@ -3,7 +3,9 @@ import { createPortal } from "react-dom";
 import { api } from "./api.js";
 import { notify, subscribeNotice } from "./notice.js";
 import { Workspace } from "./workspace.jsx";
+import { ParentPortal } from "./parentPortal.jsx";
 import { Icon, NAV_ICON } from "./icons.jsx";
+import { WindField } from "./wind.jsx";
 import { LANGS, getLang, setLanguage, t, useLanguage } from "./i18n.js";
 
 const SITE_ORIGIN = "https://www.ishuriapp.com";
@@ -54,6 +56,7 @@ function visitorId() {
 
 const NAV = [
   { id: "home", label: "Discover", path: "#/" },
+  { id: "schools", label: "Schools", path: "#/schools" },
   { id: "rankings", label: "Rankings", path: "#/rankings" },
   { id: "events", label: "Events", path: "#/events" },
   { id: "now", label: "Now", path: "#/now" },
@@ -109,34 +112,42 @@ export default function App() {
     if (path.startsWith("/school/")) return { name: "school", id: decodeURIComponent(path.slice(8)) };
     if (path === "/desk" || path.startsWith("/desk/")) return { name: "desk", section: path.replace(/^\/desk\/?/, "") || "home" };
     if (path.startsWith("/gate")) return { name: "gate" };
+    if (path.startsWith("/schools")) return { name: "schools" };
     if (path.startsWith("/events")) return { name: "events" };
     if (path.startsWith("/now")) return { name: "now" };
     if (path.startsWith("/rankings")) return { name: "rankings" };
+    if (path === "/parent" || path.startsWith("/parent/")) {
+      const code = path.startsWith("/parent/") ? decodeURIComponent(path.slice("/parent/".length)) : "";
+      return { name: "parent", code };
+    }
     return { name: "home" };
   }, [hash]);
 
   useEffect(() => {
     const titles = {
       home: t("IshuriApp — Rwanda’s school atlas"),
+      schools: `${t("Browse schools")} — IshuriApp`,
       rankings: t("School rankings in Rwanda — IshuriApp"),
       events: t("School events in Rwanda — IshuriApp"),
       now: t("Opportunities now — IshuriApp"),
       gate: t("Staff sign in — IshuriApp"),
       desk: t("School workspace — IshuriApp"),
       school: t("School — IshuriApp"),
+      parent: t("Parent portal — IshuriApp"),
     };
     if (route.name !== "school") {
       const description = t("IshuriApp is Rwanda’s school atlas. Search approved schools, open a school website, and compare national rankings, events and notices. Students and parents browse freely.");
-      showBrand(titles[route.name] || titles.home, description, route.name !== "desk" && route.name !== "gate");
+      showBrand(titles[route.name] || titles.home, description, route.name !== "desk" && route.name !== "gate" && route.name !== "parent");
     }
   }, [route.name, lang]);
 
   if (!ready) return null;
 
   const workspace = route.name === "gate" || route.name === "desk";
+  const desk = route.name === "desk";
 
   return (
-    <div className="app">
+    <div className={`app${desk ? " is-desk" : ""}`}>
       <a className="skip" href="#content">{t("Skip to content")}</a>
       <div className="scene" aria-hidden="true">
         <span className="orb one" />
@@ -148,17 +159,17 @@ export default function App() {
           <circle cx="170" cy="100" r="5" />
         </svg>
       </div>
+      {desk ? null : (
       <header className="topbar">
         <a className="brand" href="#/" onClick={(event) => { event.preventDefault(); go("#/"); }}>
           <img src="/logo-512.png" alt={t("IshuriApp")} width="64" height="64" />
           <div>
             <strong>{t("IshuriApp")}</strong>
-            <span>{t("Rwanda’s school atlas")}</span>
           </div>
         </a>
         <nav className="nav">
           {NAV.map((item) => (
-            <button key={item.id} className={route.name === item.id ? "active" : ""} aria-current={route.name === item.id ? "page" : undefined} onClick={() => go(item.path)}>
+            <button key={item.id} className={`${route.name === item.id ? "active" : ""}${item.id === "home" || item.id === "schools" ? "" : " phone-only"}`} aria-current={route.name === item.id ? "page" : undefined} onClick={() => go(item.path)}>
               <Icon name={NAV_ICON[item.id]} />
               {t(item.label)}
             </button>
@@ -176,57 +187,18 @@ export default function App() {
           <span>{session ? t("Workspace") : t("Staff sign in")}</span>
         </button>
       </header>
+      )}
       <main id="content" key={hash} className="stage">
         {route.name === "home" && <Home />}
+        {route.name === "schools" && <Schools />}
         {route.name === "events" && <Events />}
         {route.name === "rankings" && <Rankings />}
         {route.name === "now" && <Now />}
         {route.name === "school" && <SchoolPage id={route.id} />}
         {route.name === "gate" && <Gate onSignIn={signIn} />}
+        {route.name === "parent" && <ParentPortal code={route.code || ""} />}
         {route.name === "desk" && <Workspace session={session} section={route.section} onSignOut={signOut} onSession={setSession} />}
       </main>
-      {workspace ? (
-        <footer className="site-foot">
-          <span>{t("IshuriApp · Rwanda’s school atlas")}</span>
-          <span>{t("Students and parents browse freely. Staff sign in for the desk.")}</span>
-          <p className="foot-credit">
-            <a href="https://www.ishuriapp.com/">{t("Visit")} https://www.ishuriapp.com/</a>
-            <span>{t("Developed by Emmanuel HABUMUGISHA, The CEO & Founder of EMMYLEX Ltd.")}</span>
-          </p>
-        </footer>
-      ) : (
-        <footer className="site-foot atlas-foot">
-          <div className="foot-brand">
-            <img src="/logo-512.png" alt="" width="44" height="44" />
-            <div>
-              <strong>IshuriApp</strong>
-              <p>{t("IshuriApp lists every approved school and carries marks and discipline from the classroom to a parent phone.")}</p>
-            </div>
-          </div>
-          <nav aria-label={t("Explore")}>
-            <p className="kicker">{t("Explore")}</p>
-            {NAV.map((item) => (
-              <button key={item.id} type="button" onClick={() => go(item.path)}>
-                <Icon name={NAV_ICON[item.id]} />
-                {t(item.label)}
-              </button>
-            ))}
-          </nav>
-          <div>
-            <p className="kicker">{t("For families")}</p>
-            <p>{t("Students and parents browse freely. Staff sign in for the desk.")}</p>
-            <button type="button" className="ghost" onClick={() => go(session ? "#/desk" : "#/gate")}>
-              <Icon name={session ? "briefcase" : "key"} />
-              {session ? t("Workspace") : t("For school staff")}
-            </button>
-          </div>
-          <p className="foot-end">{t("IshuriApp · Rwanda’s school atlas")}</p>
-          <p className="foot-credit">
-            <a href="https://www.ishuriapp.com/">{t("Visit")} https://www.ishuriapp.com/</a>
-            <span>{t("Developed by Emmanuel HABUMUGISHA, The CEO & Founder of EMMYLEX Ltd.")}</span>
-          </p>
-        </footer>
-      )}
       <NoticeHost />
     </div>
   );
@@ -240,12 +212,12 @@ function NoticeHost() {
     else setNote(next);
   }), []);
   useEffect(() => {
-    if (!note) return undefined;
+    if (!note || note.tone === "bad" || note.tone === "warn") return undefined;
     const timer = window.setTimeout(() => setNote((current) => (current?.id === note.id ? null : current)), 4500);
     return () => window.clearTimeout(timer);
   }, [note]);
   const tone = note?.tone === "bad" ? "bad" : note?.tone === "warn" ? "warn" : note?.tone === "alert" ? "alert" : "ok";
-  const toneIcon = tone === "bad" ? "close" : tone === "warn" ? "alert" : tone === "alert" ? "info" : "check";
+  const toneIcon = tone === "bad" ? "alert" : tone === "warn" ? "alert" : tone === "alert" ? "info" : "check";
   const toneLabel = tone === "bad" ? t("Error") : tone === "warn" ? t("Warning") : tone === "alert" ? t("Alert") : t("Success");
   return (
     <>
@@ -254,7 +226,6 @@ function NoticeHost() {
           <div className="loading-card">
             <span className="loader-stage">
               <span className="loader-ring" />
-              <span className="loader-dot" />
             </span>
             <strong>{t("Loading...")}</strong>
             <div className="track busy-track" aria-hidden="true"><div className="fill" /></div>
@@ -262,15 +233,16 @@ function NoticeHost() {
         </div>
       ) : null}
       {note ? (
-        <button type="button" className={`toast ${tone}`} onClick={() => setNote(null)}>
+        <div className={`toast ${tone}`} role={tone === "ok" ? "status" : "alert"} aria-live={tone === "ok" ? "polite" : "assertive"}>
           <span className="toast-icon"><Icon name={toneIcon} /></span>
           <span className="toast-copy">
             <em>{toneLabel}</em>
             <strong>{note.title}</strong>
             {note.body ? <p>{note.body}</p> : null}
           </span>
-          <i className="toast-bar" />
-        </button>
+          <button className="toast-close" type="button" aria-label={t("Dismiss")} onClick={() => setNote(null)}><Icon name="close" /></button>
+          {tone === "ok" || tone === "alert" ? <i className="toast-bar" /> : null}
+        </div>
       ) : null}
     </>
   );
@@ -592,6 +564,7 @@ const CAST = [
   { src: "/avatar-father.jpg?v=1", title: "Director" },
   { src: "/avatar-teacher.jpg?v=1", title: "Teachers" },
   { src: "/avatar-officer.jpg?v=1", title: "Discipline officer" },
+  { src: "/avatar-accountant.jpg?v=1", title: "Accountant" },
   { src: "/avatar-mother.jpg?v=1", title: "Parents and students" },
 ];
 
@@ -649,77 +622,6 @@ function FamilyGraphic() {
   );
 }
 
-function StepScene({ scene }) {
-  if (scene === "profile") {
-    return (
-      <svg className="step-scene" viewBox="0 0 220 120" aria-hidden="true">
-        <rect width="220" height="120" rx="16" fill="#f4f8fc" />
-        <rect x="16" y="18" width="86" height="84" rx="10" fill="#ffffff" stroke="#d5dee8" />
-        <path d="M28 36 h62 M28 50 h62 M28 64 h40" stroke="#c5d4e4" strokeWidth="4" strokeLinecap="round" />
-        <path d="M118 60 H156" stroke="#0d47a1" strokeWidth="2" />
-        <path d="M148 54 l10 6 -10 6" fill="none" stroke="#0d47a1" strokeWidth="2" strokeLinejoin="round" />
-        <path d="M168 34 L190 34 L208 52 V96 H168 Z" fill="#ffffff" stroke="#0d47a1" />
-        <path d="M190 34 V52 H208" fill="#e3f2fd" stroke="#0d47a1" />
-      </svg>
-    );
-  }
-  if (scene === "review") {
-    return (
-      <svg className="step-scene" viewBox="0 0 220 120" aria-hidden="true">
-        <rect width="220" height="120" rx="16" fill="#f4f8fc" />
-        <rect x="18" y="28" width="64" height="64" rx="10" fill="#ffffff" stroke="#d5dee8" />
-        <path d="M30 48 h40 M30 62 h40 M30 76 h24" stroke="#c5d4e4" strokeWidth="4" strokeLinecap="round" />
-        <path d="M96 60 H128" stroke="#0d47a1" strokeWidth="2" />
-        <path d="M120 54 l10 6 -10 6" fill="none" stroke="#0d47a1" strokeWidth="2" />
-        <circle cx="164" cy="60" r="26" fill="#0d47a1" />
-        <path d="M152 60 l8 8 16-18" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (scene === "marks") {
-    return (
-      <svg className="step-scene" viewBox="0 0 220 120" aria-hidden="true">
-        <rect width="220" height="120" rx="16" fill="#f4f8fc" />
-        <rect x="16" y="22" width="78" height="76" rx="10" fill="#ffffff" stroke="#d5dee8" />
-        <text x="55" y="52" textAnchor="middle" fill="#5c7690" fontSize="11" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("MARKS")}</text>
-        <text x="55" y="76" textAnchor="middle" fill="#0d47a1" fontSize="16" fontWeight="800" fontFamily="Instrument Sans, sans-serif">94/100</text>
-        <path d="M106 60 H140" stroke="#0d47a1" strokeWidth="2" />
-        <path d="M132 54 l10 6 -10 6" fill="none" stroke="#0d47a1" strokeWidth="2" />
-        <rect x="150" y="24" width="52" height="76" rx="10" fill="#0d47a1" />
-        <rect x="156" y="32" width="40" height="52" rx="6" fill="#f7fbff" />
-        <text x="176" y="54" textAnchor="middle" fill="#0d47a1" fontSize="10" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-        <text x="176" y="70" textAnchor="middle" fill="#1565C0" fontSize="9" fontFamily="Instrument Sans, sans-serif">94/100</text>
-      </svg>
-    );
-  }
-  if (scene === "conduct") {
-    return (
-      <svg className="step-scene" viewBox="0 0 220 120" aria-hidden="true">
-        <rect width="220" height="120" rx="16" fill="#f4f8fc" />
-        <rect x="16" y="22" width="78" height="76" rx="10" fill="#ffffff" stroke="#d5dee8" />
-        <circle cx="40" cy="48" r="10" fill="#e3f2fd" />
-        <path d="M35 48 l3 3 7-8" fill="none" stroke="#0d47a1" strokeWidth="2" strokeLinecap="round" />
-        <text x="64" y="52" fill="#0d47a1" fontSize="11" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Discipline")}</text>
-        <path d="M28 70 h52 M28 82 h36" stroke="#c5d4e4" strokeWidth="4" strokeLinecap="round" />
-        <path d="M106 60 H140" stroke="#0d47a1" strokeWidth="2" />
-        <path d="M132 54 l10 6 -10 6" fill="none" stroke="#0d47a1" strokeWidth="2" />
-        <rect x="150" y="24" width="52" height="76" rx="10" fill="#0d47a1" />
-        <rect x="156" y="32" width="40" height="52" rx="6" fill="#f7fbff" />
-        <text x="176" y="62" textAnchor="middle" fill="#0d47a1" fontSize="11" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      </svg>
-    );
-  }
-  return (
-    <svg className="step-scene" viewBox="0 0 220 120" aria-hidden="true">
-      <rect width="220" height="120" rx="16" fill="#f4f8fc" />
-      <rect x="28" y="16" width="164" height="88" rx="12" fill="#ffffff" stroke="#d5dee8" />
-      <text x="44" y="42" fill="#0d47a1" fontSize="13" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Staff")}</text>
-      <text x="44" y="66" fill="#0d47a1" fontSize="13" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Events")}</text>
-      <text x="44" y="90" fill="#0d47a1" fontSize="13" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Gallery")}</text>
-    </svg>
-  );
-}
-
 function HeroCast() {
   return (
     <div className="hero-cast" aria-label={t("Who it supports")}>
@@ -746,7 +648,7 @@ const FAQ = [
   ["How do stars and likes work?", "Give 1 to 5 stars, or like the school. Each browser has one vote, and you can change it. The card shows the public average and the number of likes."],
   ["How does a parent receive marks?", "A teacher records assessments for a class and saves the marks. The parent phone receives the SMS."],
   ["How does a parent receive a discipline notice?", "A discipline officer records the case. The parent phone receives the SMS."],
-  ["Which phone number receives the SMS?", "The one parent phone saved on the student. It is 12 digits beginning with 250, for example 250788000000."],
+  ["Which phone number receives the SMS?", "The one parent phone saved on the student. It is 10 digits and starts with 07, for example 0788000000."],
   ["Why is a school missing from Discover?", "Discover lists approved schools only. A school still in review, or one IshuriApp has deactivated, does not appear."],
   ["How do I search and move between pages?", "Search a school, a district or a motto. Filter by primary, secondary, TVET or university, then by province, district, sector and address. The numbers under the list open the next page."],
   ["What do Rankings, Events and Now show?", "Rankings show the performance snapshots each approved school publishes, with its national rank. Events are the public events a school publishes. Now shows programmes, trainings and notices that schools and partners choose to publish."],
@@ -758,7 +660,7 @@ const FAQ = [
 function Faq() {
   const [open, setOpen] = useState(0);
   return (
-    <section className="faq" id="faq">
+    <section className="faq saas-faq" id="faq">
       <header className="life-lead">
         <p className="kicker"><Icon name="info" />IshuriApp</p>
         <h2>{t("Questions")}</h2>
@@ -784,71 +686,6 @@ function Faq() {
   );
 }
 
-function DiscoverStory() {
-  const people = [
-    { src: "/avatar-mother.jpg?v=1", title: "Parents and students", body: "They browse schools, events and results without an account. Parents receive marks and discipline by SMS." },
-    { src: "/avatar-teacher.jpg?v=1", title: "Teachers", body: "They record assessments for any class and the parent phone receives the mark." },
-    { src: "/avatar-officer.jpg?v=1", title: "Discipline officer", body: "They record conduct and the parent phone receives the notice." },
-    { src: "/avatar-father.jpg?v=1", title: "Director", body: "They publish the school website, staff, events and the messages parents receive." },
-  ];
-  const steps = [
-    { role: "Director", src: "/avatar-father.jpg?v=1", scene: "profile", text: "The director submits the school profile.", detail: "The director signs in and submits the school profile: name, place, motto, staff, events and gallery. The school stays private until IshuriApp reviews it." },
-    { role: "IshuriApp", src: "/logo-512.png", scene: "review", text: "IshuriApp reviews it and the school becomes public.", detail: "IshuriApp reviews the profile. An approved school is listed on Discover, and families can open its website." },
-    { role: "Teachers", src: "/avatar-teacher.jpg?v=1", scene: "marks", text: "A teacher saves marks. The parent receives the SMS.", detail: "A teacher records assessments for a class and saves the marks. The parent phone receives the SMS." },
-    { role: "Discipline officer", src: "/avatar-officer.jpg?v=1", scene: "conduct", text: "A discipline officer records a case. The parent receives the SMS.", detail: "A discipline officer records the case. The parent phone receives the SMS." },
-    { role: "Parents and students", src: "/avatar-mother.jpg?v=1", scene: "site", text: "Families open the school website for staff, events and the gallery.", detail: "Parents and students open the school website with no account. They read the staff, the events and the gallery, and they can rate and like the school." },
-  ];
-  return (
-    <section className="lifecycle" id="how">
-      <header className="life-lead">
-        <p className="kicker"><Icon name="school" />IshuriApp</p>
-        <h2>{t("How it works")}</h2>
-        <p>{t("IshuriApp lists every approved school and carries marks and discipline from the classroom to a parent phone.")}</p>
-      </header>
-      <div className="life-scenes">
-        {[
-          ["/scene-family.jpg", "Parents and students"],
-          ["/scene-class.jpg", "Who it supports"],
-          ["/scene-teacher.jpg", "Teachers"],
-        ].map(([src, title]) => (
-          <figure key={title}>
-            <SoftImage src={src} alt="" />
-            <figcaption>{t(title)}</figcaption>
-          </figure>
-        ))}
-      </div>
-      <ol className="life-chain">
-        {steps.map((step, index) => (
-          <li className="life-step" key={step.text}>
-            <div className="life-who">
-              <b>{String(index + 1).padStart(2, "0")}</b>
-              <SoftImage src={step.src} alt="" />
-            </div>
-            <StepScene scene={step.scene} />
-            <div className="life-copy">
-              <strong>{t(step.role)}</strong>
-              <p className="life-line">{t(step.text)}</p>
-              <p>{t(step.detail)}</p>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <h2 className="life-kicker">{t("Who it supports")}</h2>
-      <div className="story-people">
-        {people.map((person) => (
-          <article key={person.title}>
-            <SoftImage src={person.src} alt="" />
-            <div>
-              <strong>{t(person.title)}</strong>
-              <p>{t(person.body)}</p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function markMatch(text, needle) {
   const value = String(text || "");
   const query = needle.trim();
@@ -868,7 +705,7 @@ function schoolPlace(school) {
   return location.address || [location.sector, location.district, location.province].filter(Boolean).join(", ");
 }
 
-function SchoolRate({ school, onChange }) {
+function SchoolRate({ school, onChange, hideLike = false }) {
   const average = Number(school.ratingAverage) || 0;
   const count = Number(school.ratingCount) || 0;
   const likes = Number(school.likeCount) || 0;
@@ -887,11 +724,164 @@ function SchoolRate({ school, onChange }) {
         })}
       </div>
       <span className="rate-num">{count ? average.toFixed(1) : t("Rate")}</span>
-      <button type="button" className={school.myLike ? "like-school on" : "like-school"} aria-pressed={Boolean(school.myLike)} aria-label={t("Like")} onClick={() => onChange({ liked: !school.myLike })}>
-        <Icon name="heart" />
-        <span>{likes}</span>
-      </button>
+      {hideLike ? null : (
+        <button type="button" className={school.myLike ? "like-school on" : "like-school"} aria-pressed={Boolean(school.myLike)} aria-label={t("Like")} onClick={() => onChange({ liked: !school.myLike })}>
+          <Icon name="heart" />
+          <span>{likes}</span>
+        </button>
+      )}
     </div>
+  );
+}
+
+function CardHeart({ school, onChange }) {
+  return (
+    <button type="button" className={school.myLike ? "card-heart on" : "card-heart"} aria-pressed={Boolean(school.myLike)} aria-label={t("Like")} onClick={() => onChange({ liked: !school.myLike })}>
+      <Icon name="heart" />
+    </button>
+  );
+}
+
+function openSchool(school) {
+  go(`#/school/${school.slug || school._id}`);
+}
+
+function SchoolFacts({ school }) {
+  return (
+    <div className="school-facts">
+      <span><Icon name="school" />{t(school.type)}</span>
+      {school.studentCount ? <span><Icon name="graduate" />{school.studentCount} {t("Students")}</span> : null}
+      {school.teacherCount ? <span><Icon name="people" />{school.teacherCount} {t("Teachers")}</span> : null}
+      {school.establishedYear ? <span><Icon name="calendar" />{school.establishedYear}</span> : null}
+    </div>
+  );
+}
+
+function SchoolCover({ school }) {
+  return (
+    <div className="cover">
+      {school.coverUrl ? <SoftImage src={school.coverUrl} alt="" /> : <span className="cover-mark"><SchoolMark school={school} /></span>}
+    </div>
+  );
+}
+
+function titleWithRwanda(text) {
+  const at = text.indexOf("Rwanda");
+  if (at < 0) return text;
+  return <>{text.slice(0, at)}<span>Rwanda</span>{text.slice(at + 6)}</>;
+}
+
+function adLabel(ad) {
+  return t(String(ad.category || "other").replaceAll("_", " "));
+}
+
+function AdLead({ ad, onOpen }) {
+  return (
+    <article className="school atlas-ad">
+      <button type="button" className="atlas-ad-open" onClick={() => onOpen(ad)}>
+        <span className="cover">
+          {ad.videoUrl ? (
+            <video src={ad.videoUrl} poster={ad.imageUrl || undefined} autoPlay muted playsInline loop />
+          ) : ad.imageUrl ? (
+            <SoftImage src={ad.imageUrl} alt="" />
+          ) : (
+            <span className="cover-mark"><Icon name="megaphone" /></span>
+          )}
+        </span>
+        <span className="atlas-copy">
+          <b className="atlas-badge"><Icon name="megaphone" />{adLabel(ad)}</b>
+          <strong>{ad.title}</strong>
+          {ad.body ? <span className="atlas-line">{ad.body}</span> : null}
+          <span className="visit-site">{t(ad.ctaLabel || "Learn more")}<Icon name="right" /></span>
+        </span>
+      </button>
+    </article>
+  );
+}
+
+function AdDetail({ ad, onClose }) {
+  useEffect(() => {
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="ad-detail" role="dialog" aria-modal="true" aria-label={ad.title}>
+      <button type="button" className="ad-detail-back" aria-label={t("Close")} onClick={onClose} />
+      <article>
+        <button type="button" className="ad-detail-close" aria-label={t("Close")} onClick={onClose}><Icon name="close" /></button>
+        <div className="ad-detail-media">
+          {ad.videoUrl ? (
+            <AdVideo src={ad.videoUrl} poster={ad.imageUrl} loop interactive />
+          ) : ad.imageUrl ? (
+            <SoftImage src={ad.imageUrl} alt="" />
+          ) : (
+            <span className="cover-mark"><Icon name="megaphone" /></span>
+          )}
+        </div>
+        <div className="ad-detail-copy">
+          <b className="atlas-badge"><Icon name="megaphone" />{adLabel(ad)}</b>
+          <h2>{ad.title}</h2>
+          {ad.body ? <p>{ad.body}</p> : null}
+          {ad.ctaUrl ? (
+            <a className="visit-site" href={ad.ctaUrl} target="_blank" rel="noreferrer">{t(ad.ctaLabel || "Learn more")}<Icon name="right" /></a>
+          ) : null}
+        </div>
+      </article>
+    </div>,
+    document.body
+  );
+}
+
+function SchoolLead({ school, onRate }) {
+  const place = schoolPlace(school) || "Rwanda";
+  const line = school.tagline || school.motto;
+  return (
+    <article className="school atlas-lead">
+      <button type="button" className="cover-hit" onClick={() => openSchool(school)}>
+        <SchoolCover school={school} />
+      </button>
+      <CardHeart school={school} onChange={(patch) => onRate(school, patch)} />
+      <div className="atlas-copy">
+        {school.isFeatured ? <b className="atlas-badge"><Icon name="star" />{t("Featured school")}</b> : null}
+        <button type="button" className="atlas-name" onClick={() => openSchool(school)}>
+          <strong>{school.name}</strong>
+        </button>
+        <p className="school-place"><Icon name="pin" />{place}</p>
+        {line ? <p className="atlas-line">{line}</p> : null}
+        <SchoolFacts school={school} />
+        <div className="atlas-row">
+          <SchoolRate school={school} hideLike onChange={(patch) => onRate(school, patch)} />
+          <button type="button" className="visit-site" onClick={() => openSchool(school)}>
+            {t("Visit site")}
+            <Icon name="right" />
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function SchoolTile({ school, onRate }) {
+  const place = schoolPlace(school) || "Rwanda";
+  return (
+    <article className="school atlas-tile">
+      <button type="button" className="school-open" onClick={() => openSchool(school)}>
+        <SchoolCover school={school} />
+        <strong>{school.name}</strong>
+        <span className="school-place"><Icon name="pin" />{place}</span>
+      </button>
+      <CardHeart school={school} onChange={(patch) => onRate(school, patch)} />
+      <div className="atlas-tile-foot">
+        <SchoolRate school={school} hideLike onChange={(patch) => onRate(school, patch)} />
+        <span className="type-pill">{t(school.type)}</span>
+      </div>
+    </article>
   );
 }
 
@@ -922,55 +912,17 @@ function Bone({ className = "" }) {
   return <i className={`skel ${className}`.trim()} />;
 }
 
-function HeroGlobe() {
-  return (
-    <svg className="hero-globe" viewBox="0 0 240 240" aria-hidden="true">
-      <defs>
-        <clipPath id="heroGlobeClip">
-          <circle cx="120" cy="120" r="92" />
-        </clipPath>
-      </defs>
-      <circle cx="120" cy="120" r="92" fill="#f3f8fc" stroke="#9ebbd4" strokeWidth="1.6" />
-      <g clipPath="url(#heroGlobeClip)" fill="none" stroke="#9ebbd4" strokeWidth="1.15">
-        <ellipse cx="120" cy="120" rx="92" ry="34" />
-        <ellipse cx="120" cy="120" rx="92" ry="62" />
-        <path d="M28 120h184" />
-        <path d="M36 86h168" stroke="#b7cde0" />
-        <path d="M36 154h168" stroke="#b7cde0" />
-        <ellipse cx="120" cy="120" rx="34" ry="92" />
-        <ellipse cx="120" cy="120" rx="62" ry="92" />
-      </g>
-    </svg>
-  );
-}
-
 function HeroSkeleton() {
   return (
-    <header className="page-head hero-stage" aria-hidden="true">
-      <div className="hero-copy">
+    <header className="saas-hero" aria-hidden="true">
+      <div className="portal-card">
         <Bone className="short" />
         <Bone className="skel-title" />
-        <Bone className="skel-title thin" />
         <Bone />
-        <Bone className="short" />
-        <div className="hero-actions">
-          <Bone className="skel-btn" />
-          <Bone className="skel-btn ghost" />
-        </div>
-        <div className="hero-cast">
-          {[0, 1, 2, 3].map((item) => (
-            <div className="cast-link" key={item}>
-              <article>
-                <Bone className="skel-avatar" />
-                <Bone className="short" />
-              </article>
-            </div>
-          ))}
-        </div>
+        <Bone className="field-skel" />
+        <Bone className="skel-btn" />
       </div>
-      <div className="hero-art">
-        <HeroGlobe />
-        <Bone className="skel-board" />
+      <div className="saas-stage">
         <Bone className="skel-board crest" />
       </div>
     </header>
@@ -998,37 +950,6 @@ function SchoolSkeletons() {
   );
 }
 
-function StorySkeleton() {
-  return (
-    <section className="lifecycle" aria-hidden="true">
-      <header className="life-lead">
-        <Bone className="short" />
-        <Bone className="skel-title" />
-        <Bone />
-      </header>
-      <div className="life-scenes" aria-hidden="true">
-        {[0, 1, 2].map((item) => <Bone className="scene-skel" key={item} />)}
-      </div>
-      <div className="life-chain">
-        {[0, 1, 2, 3, 4].map((item) => (
-          <article className="life-step" key={item}>
-            <div className="life-who"><Bone className="skel-avatar" /></div>
-            <Bone className="step-skel" />
-            <div className="life-copy"><Bone className="short" /><Bone /><Bone /></div>
-          </article>
-        ))}
-      </div>
-      <div className="story-people">
-        {[0, 1, 2, 3].map((item) => (
-          <article key={item}>
-            <Bone className="skel-avatar" />
-            <div className="skel-copy"><Bone className="short" /><Bone /><Bone /></div>
-          </article>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function FaqSkeleton() {
   return (
@@ -1045,7 +966,91 @@ function FaqSkeleton() {
   );
 }
 
+function isOfflineError(error) {
+  if (typeof navigator !== "undefined" && navigator.onLine === false) return true;
+  const message = String(error?.message || "");
+  return /failed to fetch|networkerror|load failed|network request failed|internet connection appears to be offline/i.test(message);
+}
+
+function OfflineNotice({ onRetry }) {
+  return (
+    <div className="offline-note" role="status">
+      <svg className="offline-avatar" viewBox="0 0 220 180" role="img" aria-label={t("No Internet connection")}>
+        <g className="offline-wifi">
+          <path d="M78 28c14-12 36-12 50 0" />
+          <path d="M88 38c8-7 18-7 26 0" />
+          <path d="M98 48c4-3 10-3 14 0" />
+          <circle cx="105" cy="56" r="2.4" fill="#0D47A1" stroke="none" />
+          <path className="offline-slash" d="M84 22l36 36" />
+        </g>
+        <g className="offline-sitter">
+          <rect x="62" y="132" width="96" height="14" rx="7" fill="#e3f2fd" />
+          <path d="M78 118c8 16 18 22 28 22h28c6 0 14-8 18-20" fill="none" stroke="#1565C0" strokeWidth="8" strokeLinecap="round" />
+          <path d="M86 124c2 18-2 28-14 32" fill="none" stroke="#0D47A1" strokeWidth="8" strokeLinecap="round" />
+          <path d="M128 124c4 16 14 26 28 28" fill="none" stroke="#0D47A1" strokeWidth="8" strokeLinecap="round" />
+          <rect x="86" y="78" width="46" height="48" rx="18" fill="#1565C0" />
+          <circle cx="109" cy="58" r="18" fill="#f6d7bf" />
+          <path d="M92 54c4-12 30-14 36-2 2 8-4 10-10 8-8-4-16-2-22 2-4-4-6-6-4-8z" fill="#0D47A1" />
+          <g className="offline-eyes">
+            <circle cx="102" cy="60" r="1.7" fill="#0D47A1" />
+            <circle cx="116" cy="60" r="1.7" fill="#0D47A1" />
+          </g>
+          <path d="M104 68c3 2 8 2 11 0" fill="none" stroke="#0D47A1" strokeWidth="1.4" strokeLinecap="round" />
+        </g>
+      </svg>
+      <h2>{t("No Internet connection")}</h2>
+      <p>{t("Check your connection, then try the search again.")}</p>
+      <button className="solid" type="button" onClick={onRetry}>{t("Try again")}</button>
+    </div>
+  );
+}
+
 function Home() {
+  const [portalCode, setPortalCode] = useState("");
+  return (
+    <div className="page home-page discover-fit">
+      <section className="saas-hero">
+        <div className="home-wind wind-host">
+          <WindField />
+          <form className="portal-card" onSubmit={(event) => { event.preventDefault(); const code = portalCode.trim(); go(code ? `#/parent/${encodeURIComponent(code)}` : "#/parent"); }}>
+            <h1><Icon name="people" />{t("Parent portal")}</h1>
+            <p>{t("Parents and students enter the student code. The page shows fees with a tick or a cross, the class midterm list, follow-up, discipline, assessments, examinations, events and announcements.")}</p>
+            <label className="field">{t("Student code")}
+              <input value={portalCode} onChange={(event) => setPortalCode(event.target.value)} autoComplete="off" spellCheck="false" placeholder="GSN-2026-014" />
+            </label>
+            <button className="solid" type="submit">{t("Show this student")}<Icon name="right" /></button>
+          </form>
+        </div>
+        <div className="saas-stage home-photos">
+          <figure className="home-photo-main">
+            <img src="/home-class.jpg" alt={t("Teachers")} />
+            <figcaption>
+              <strong>{t("Parents follow up")}</strong>
+              <ul>
+                <li><Icon name="book" />{t("Studies")}</li>
+                <li><Icon name="wallet" />{t("School fees")}</li>
+                <li><Icon name="bell" />{t("School updates")}</li>
+                <li><Icon name="people" />{t("School groups")}</li>
+              </ul>
+            </figcaption>
+          </figure>
+          <div className="home-photo-side">
+            <figure>
+              <img src="/home-message.jpg" alt={t("Parents and students")} />
+              <figcaption>{t("Parents follow marks and discipline by phone message")}</figcaption>
+            </figure>
+            <figure>
+              <img src="/home-family.jpg" alt={t("Discover")} />
+              <figcaption>{t("Students and parents browse freely. Staff sign in for the desk.")}</figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function Schools() {
   const [q, setQ] = useState("");
   const [type, setType] = useState("");
   const [province, setProvince] = useState("");
@@ -1059,6 +1064,8 @@ function Home() {
   const [schools, setSchools] = useState([]);
   const [ads, setAds] = useState([]);
   const [error, setError] = useState("");
+  const [offline, setOffline] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [pending, setPending] = useState(true);
   const [catalog, setCatalog] = useState([]);
@@ -1067,6 +1074,7 @@ function Home() {
   const [query, setQuery] = useState("");
   const rating = useRef(new Set());
   const suggestRef = useRef(null);
+  const [openAd, setOpenAd] = useState(null);
 
   useEffect(() => {
     api("/public/districts").then((data) => setPlaces(data.items || [])).catch(() => setPlaces([]));
@@ -1114,18 +1122,36 @@ function Home() {
         setTotal(schoolData.meta?.total ?? (schoolData.items || []).length);
         setAds(adData.items || []);
         setError("");
+        setOffline(false);
         setLoaded(true);
         setPending(false);
       })
       .catch(async (err) => {
         await afterPaint(started);
         if (cancel) return;
-        setError(err.message);
+        if (isOfflineError(err)) {
+          setOffline(true);
+          setError("");
+        } else {
+          setOffline(false);
+          setError(err.message);
+        }
         setLoaded(true);
         setPending(false);
       });
     return () => { cancel = true; };
-  }, [query, type, province, district, sector, address, page]);
+  }, [query, type, province, district, sector, address, page, retry]);
+
+  useEffect(() => {
+    const lost = () => setOffline(true);
+    const back = () => setRetry((value) => value + 1);
+    window.addEventListener("offline", lost);
+    window.addEventListener("online", back);
+    return () => {
+      window.removeEventListener("offline", lost);
+      window.removeEventListener("online", back);
+    };
+  }, []);
 
   const rows = places.map((item) => item._id || {}).filter((item) => item.province || item.district || item.sector || item.address);
   const provinces = uniquePlaces(rows.map((item) => item.province));
@@ -1220,6 +1246,7 @@ function Home() {
             onFocus={() => setSuggestOpen(true)}
             onKeyDown={onSearchKey}
             placeholder={t("Search a school, district or motto")}
+            id="school-search"
             aria-label={t("Search a school, district or motto")}
             aria-autocomplete="list"
             aria-controls="school-suggest"
@@ -1290,34 +1317,35 @@ function Home() {
     </aside>
   );
 
-  const showAds = ads.length > 0;
+  const featuredAd = ads[0] || null;
+  const demoAd = ads.find((item) => item.videoUrl) || featuredAd;
+  function showAd(ad) {
+    if (!ad) return;
+    setOpenAd(ad);
+    api(`/public/ads/${ad._id}/click`, { method: "POST", quiet: true }).catch(() => undefined);
+  }
+  function focusSearch() {
+    scrollToId("directory");
+    window.setTimeout(() => document.getElementById("school-search")?.focus(), 280);
+  }
   return (
-    <div className="page home-page">
-      {!loaded ? <HeroSkeleton /> : (
-      <header className="page-head hero-stage">
-        <div className="hero-copy">
-          <p className="kicker">{t("Rwanda’s school atlas")}</p>
-          <h1>{t("The quiet atlas of Rwanda’s classrooms.")}</h1>
-          <p className="lede">{t("IshuriApp lists every approved school and carries marks and discipline from the classroom to a parent phone.")}</p>
-          <div className="hero-actions">
-            <button className="solid" type="button" onClick={() => scrollToId("directory")}>
-              {t("Browse schools")}
-              <Icon name="right" />
-            </button>
-            <button className="ghost" type="button" onClick={() => scrollToId("how")}>{t("How it works")}</button>
+    <div className="page home-page schools-page">
+      <section className="schools-hero">
+        <div className="schools-hero-copy">
+          <h1>{titleWithRwanda(t("Find the Right School in Rwanda"))}</h1>
+          <p>{t("Search approved schools, explore their profiles, compare rankings and stay updated with events.")}</p>
+          <div className="schools-hero-actions">
+            <button type="button" className="solid" onClick={focusSearch}><Icon name="search" />{t("Search Schools")}</button>
+            {demoAd ? <button type="button" className="ghost" onClick={() => showAd(demoAd)}><Icon name="play" />{t("Watch Demo")}</button> : null}
           </div>
-          {pending ? <p className="hero-count"><Bone className="short" /></p> : <p className="hero-count"><Icon name="school" />{t(total === 1 ? "{count} approved school" : "{count} approved schools", { count: total })}</p>}
-          <HeroCast />
         </div>
-        <div className="hero-art">
-          <HeroGlobe />
-          <FamilyGraphic />
-          <CrestGraphic />
-        </div>
-      </header>
-      )}
-      {error ? <p className="banner">{error}. Start the API on port 4000, then search again.</p> : null}
-      <div className={`directory-wrap${showAds || pending ? " has-ads" : ""}`} id="directory">
+        <figure className="schools-hero-photo">
+          <img src="/schools-hero.jpg?v=4" alt="" />
+        </figure>
+      </section>
+      {error && !offline ? <p className="banner">{t(error)}</p> : null}
+      <section className="saas-directory" id="directory">
+      <div className="directory-wrap">
         {loaded ? filters : (
           <aside className="filter-rail skel-card" aria-hidden="true">
             <Bone className="short" />
@@ -1326,67 +1354,37 @@ function Home() {
           </aside>
         )}
         <div className="directory-main">
-        <div className={`discover${showAds || pending ? " has-ads" : ""}`}>
+        <div className="discover">
         <div className="discover-main">
-          {pending && !error ? <SchoolSkeletons /> : (
-            <div className="school-grid">
-              {schools.map((school) => {
-                const location = school.location || {};
-                const place = location.address || [location.sector, location.district, location.province].filter(Boolean).join(", ") || "Rwanda";
-                return (
-                  <article key={school._id} className="school">
-                    <button type="button" className="school-open" onClick={() => go(`#/school/${school.slug || school._id}`)}>
-                      <div className="cover">
-                        {school.coverUrl ? <SoftImage src={school.coverUrl} alt="" /> : null}
-                        {school.nationalRank ? <b>{t("Rating")} #{school.nationalRank}</b> : null}
-                      </div>
-                      <div className="school-body">
-                        <span className="logo"><SchoolMark school={school} /></span>
-                        <span>
-                          <strong>{school.name}</strong>
-                          <em>{school.tagline || school.motto || place}</em>
-                        </span>
-                      </div>
-                    </button>
-                    <div className="school-facts">
-                      <span><Icon name="school" />{t(school.type)}</span>
-                      <span><Icon name="pin" />{place}</span>
-                      {school.studentCount ? <span><Icon name="graduate" />{school.studentCount} {t("Students")}</span> : null}
-                      {school.teacherCount ? <span><Icon name="people" />{school.teacherCount} {t("Teachers")}</span> : null}
-                      {school.establishedYear ? <span><Icon name="calendar" />{school.establishedYear}</span> : null}
-                    </div>
-                    <SchoolRate school={school} onChange={(patch) => rateSchool(school, patch)} />
-                    <div className="school-foot">
-                      <span className="listing-pill"><Icon name="check" />{t("Listing")}</span>
-                      <button type="button" className="visit-site" onClick={() => go(`#/school/${school.slug || school._id}`)}>
-                        {t("Visit site")}
-                        <Icon name="right" />
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
+          {offline ? <OfflineNotice onRetry={() => { setOffline(false); setRetry((value) => value + 1); }} /> : pending && !error ? <SchoolSkeletons /> : (
+            <div className="atlas-board">
+              {featuredAd ? <AdLead ad={featuredAd} onOpen={showAd} /> : null}
+              {schools.length ? (
+                <>
+                  <h2 className="atlas-kicker">{t("Top rated schools")}</h2>
+                  <div className="atlas-tiles">
+                    {schools.map((school) => <SchoolTile key={school._id} school={school} onRate={rateSchool} />)}
+                  </div>
+                </>
+              ) : null}
             </div>
           )}
-          {!pending && schools.length === 0 && !error ? <p className="muted"><strong>{t("No schools yet")}</strong><br />{t("Approved schools appear here after IshuriApp review.")}</p> : null}
+          {!pending && !offline && schools.length === 0 && !error ? <p className="muted"><strong>{t("No schools yet")}</strong><br />{t("Approved schools appear here after IshuriApp review.")}</p> : null}
           {!pending && total > 0 ? <ResultPager page={page} pages={pages} onPage={turnPage} /> : null}
         </div>
-        {pending && !error ? (
-          <aside className="ad side-note skel-card" aria-hidden="true">
-            <div className="skel skel-media" />
-            <i className="skel" />
-            <i className="skel short" />
-          </aside>
-        ) : ads.length ? (
-          <aside className="ad side-note">
-            <AdStage ads={ads} mode="home" />
-          </aside>
-        ) : null}
         </div>
         </div>
       </div>
-      {loaded ? <DiscoverStory /> : <StorySkeleton />}
-      {loaded ? <Faq /> : <FaqSkeleton />}
+      </section>
+      <footer className="schools-foot">
+        <ul>
+          <li><Icon name="shield" /><span><strong>{t("Trusted Information")}</strong>{t("from Official Sources")}</span></li>
+          <li><Icon name="chart" /><span><strong>{t("Real-Time Updates")}</strong>{t("on Schools and Events")}</span></li>
+          <li><Icon name="people" /><span><strong>{t("Helping Students and Parents")}</strong>{t("Across Rwanda")}</span></li>
+        </ul>
+        <button type="button" className="solid" onClick={focusSearch}>{t("Explore More Schools")}<Icon name="right" /></button>
+      </footer>
+      {openAd ? <AdDetail ad={openAd} onClose={() => setOpenAd(null)} /> : null}
     </div>
   );
 }
@@ -1764,6 +1762,10 @@ function Rankings() {
 const SITE_TABS = ["Home", "About", "Staff", "Events", "Gallery", "Contact"];
 const SITE_ICON = { Home: "home", About: "info", Staff: "people", Events: "calendar", Gallery: "image", Contact: "phone" };
 
+function storiesCount(school) {
+  return [school.about, school.history, school.vision, school.mission, school.performanceSummary].filter((value) => String(value || "").trim()).length;
+}
+
 function CampusHeading({ icon, children }) {
   return <h2 className="campus-heading"><Icon name={icon} />{children}</h2>;
 }
@@ -1997,75 +1999,136 @@ function SchoolPage({ id }) {
     const line = (about ? `${data.school.name}. ${about}` : `${data.school.name} on IshuriApp, Rwanda’s school atlas.`).slice(0, 160);
     showBrand(`${data.school.name} — IshuriApp`, line, true);
   }, [data]);
-  if (error) return <div className="page"><p className="banner">{error}</p></div>;
+  if (error) return <div className="parent-portal"><section className="asana-gate"><p className="banner">{t(error)}</p></section></div>;
   if (!data) {
     return (
-      <article className="campus" aria-hidden="true">
-        <header className="campus-hero skel" />
-        <div className="campus-sheet">
-          <div className="campus-identity">
-            <i className="skel logo-skel" />
-            <div className="skel-copy">
-              <Bone className="short" />
-              <Bone className="skel-title" />
-              <Bone />
-              <Bone className="short" />
-            </div>
-            <div className="campus-stats">
-              {[0, 1, 2].map((item) => <i className="skel stat-skel" key={item} />)}
-            </div>
-          </div>
-          <div className="campus-nav">
-            {[0, 1, 2, 3, 4, 5].map((item) => <Bone className="skel-btn" key={item} />)}
+      <div className="parent-portal is-open" aria-hidden="true">
+        <div className="asana-shell">
+          <aside className="asana-side">
+            <Bone className="short" />
+            <Bone />
+            <Bone />
+            <Bone />
+          </aside>
+          <div className="asana-main">
+            <Bone className="short" />
+            <Bone className="skel-title" />
+            <Bone />
           </div>
         </div>
-        <div className="campus-body skel-rows">
-          <i className="skel card-skel" />
-          <i className="skel card-skel" />
-        </div>
-      </article>
+      </div>
     );
   }
   const school = data.school;
   const place = [school.location?.sector, school.location?.district, school.location?.province].filter(Boolean).join(", ");
   const nextEvent = data.events?.[0];
+  const announcements = data.announcements || [];
+  const words = String(school.name || "").trim().split(/\s+/).filter(Boolean);
+  const letters = words.length > 1 ? `${words[0][0]}${words[1][0]}` : (words[0] || "IS").slice(0, 2);
+  const figures = [
+    ["Students", school.studentCount, "About"],
+    ["Teachers", school.teacherCount, "Staff"],
+    ["Founded", school.establishedYear, "About"],
+    ["National rank", school.nationalRank ? `#${school.nationalRank}` : "", "Home"],
+  ].filter(([, value]) => value != null && String(value).trim() !== "");
+  const sections = [
+    ["About", "info", storiesCount(school) || ""],
+    ["Staff", "people", (data.staff || []).length],
+    ["Events", "calendar", (data.events || []).length],
+    ["Gallery", "image", (data.gallery || []).length],
+    ["Contact", "phone", ""],
+  ];
   return (
-    <article className="campus">
-      <header className="campus-hero">
-        {school.coverUrl ? <SoftImage src={school.coverUrl} alt="" /> : null}
-      </header>
-      <div className="campus-sheet">
-        <div className="campus-identity">
-          <div className="campus-mark">
-            {school.logoUrl && !logoFailed ? <SoftImage src={school.logoUrl} alt="" onError={() => setLogoFailed(true)} /> : <span><Icon name="school" /></span>}
+    <div className="parent-portal is-open">
+      <div className="asana-shell">
+        <aside className="asana-side">
+          <div className="asana-brand">
+            <span className="asana-avatar is-mark">
+              {school.logoUrl && !logoFailed ? <SoftImage src={school.logoUrl} alt="" onError={() => setLogoFailed(true)} /> : <b>{letters.toUpperCase()}</b>}
+            </span>
+            <strong>{school.name}</strong>
           </div>
-          <div className="campus-title">
-            <p className="kicker"><Icon name="shield" />{school.verified ? t("Admin verified") : t("Unverified")} · {t(school.type)}</p>
-            <h1>{school.name}</h1>
-            <p className="motto">{school.motto || school.tagline}</p>
-            <p className="place-line">
-              <Icon name="pin" />
-              {place}
-              {school.nationalRank ? <span className="rank-flag"><Icon name="award" />{t("National rank")} #{school.nationalRank}</span> : null}
-            </p>
+          <div className="asana-id">
+            <span className="asana-avatar" aria-hidden="true"><Icon name="pin" /></span>
+            <div>
+              <strong>{t(school.type)}</strong>
+              <span>{place || "Rwanda"}</span>
+            </div>
           </div>
-          <section className="campus-stats" aria-label={t("School figures")}>
-            <article><span className="stat-ico"><Icon name="graduate" /></span><strong>{school.studentCount || "—"}</strong><span>{t("Students")}</span></article>
-            <article><span className="stat-ico"><Icon name="people" /></span><strong>{school.teacherCount || "—"}</strong><span>{t("Teachers")}</span></article>
-            <article><span className="stat-ico"><Icon name="calendar" /></span><strong>{school.establishedYear || "—"}</strong><span>{t("Founded")}</span></article>
-          </section>
-        </div>
-        <nav className="campus-nav" aria-label={t("School website")}>
-        {SITE_TABS.map((item) => (
-          <button key={item} type="button" className={tab === item ? "on" : ""} onClick={() => setTab(item)}>
-            <Icon name={SITE_ICON[item]} />
-            {t(item)}
-          </button>
-        ))}
-        </nav>
-      </div>
-      <div className="campus-body">
-        {tab === "Home" ? <SchoolDossier school={school} announcements={data.announcements || []} nextEvent={nextEvent} /> : null}
+          <nav className="asana-nav" aria-label={t("School website")}>
+            {SITE_TABS.map((item) => (
+              <button key={item} type="button" className={tab === item ? "on" : ""} aria-current={tab === item ? "page" : undefined} onClick={() => setTab(item)}>
+                <Icon name={SITE_ICON[item]} />
+                <span>{t(item)}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="asana-side-actions">
+            <button className="solid" type="button" onClick={() => go("#/schools")}>{t("Browse schools")}</button>
+            {school.phone ? <a className="ghost" href={`tel:${school.phone}`}>{t("Call")}</a> : <button className="ghost" type="button" onClick={() => setTab("Contact")}>{t("Contact")}</button>}
+          </div>
+        </aside>
+        <div className="asana-main">
+          <header className="asana-head">
+            <div>
+              <p className="asana-kicker">{school.verified ? t("Admin verified") : t("Unverified")} · {t(school.type)}</p>
+              <h1>{tab === "Home" ? school.name : t(tab)}</h1>
+              <p className="asana-sub">{[school.motto || school.tagline, place, school.nationalRank ? `${t("National rank")} #${school.nationalRank}` : ""].filter(Boolean).join(" · ")}</p>
+            </div>
+          </header>
+          {tab === "Home" ? (
+            <>
+              {school.coverUrl ? <section className="parent-card school-cover"><SoftImage src={school.coverUrl} alt="" /></section> : null}
+              {figures.length ? (
+                <div className="asana-metrics">
+                  {figures.map(([label, value, next]) => (
+                    <button type="button" key={label} onClick={() => setTab(next)}>
+                      <span>{t(label)}</span>
+                      <strong>{value}</strong>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <section className="parent-card">
+                <ul className="asana-projects">
+                  {sections.map(([id, icon, meta]) => (
+                    <li key={id}>
+                      <button type="button" onClick={() => setTab(id)}>
+                        <Icon name={icon} />
+                        <span>{t(id)}</span>
+                        {meta ? <em>{meta}</em> : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+              {nextEvent ? (
+                <section className="parent-card">
+                  <h2>{t("Next event")}</h2>
+                  <ul className="parent-feed">
+                    <li>
+                      <strong>{nextEvent.title}</strong>
+                      <span>{nextEvent.startsAt ? new Date(nextEvent.startsAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : t("Date to be set")}{nextEvent.venue ? ` · ${nextEvent.venue}` : ""}</span>
+                      {nextEvent.description ? <p>{nextEvent.description}</p> : null}
+                    </li>
+                  </ul>
+                </section>
+              ) : null}
+              {announcements.length ? (
+                <section className="parent-card">
+                  <h2>{t("Announcements")}</h2>
+                  <ul className="parent-feed">
+                    {announcements.map((item) => (
+                      <li key={item._id}>
+                        <strong>{item.title}</strong>
+                        {item.body ? <p>{item.body}</p> : null}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+            </>
+          ) : null}
         {tab === "About" ? (
           <div className="campus-about">
             {school.history ? <section className="campus-card"><CampusHeading icon="landmark">{t("History")}</CampusHeading><p>{school.history}</p></section> : null}
@@ -2176,92 +2239,20 @@ function SchoolPage({ id }) {
             </div>
           </section>
         ) : null}
+        </div>
       </div>
       {openPhoto != null && (data.gallery || []).length ? (
         <GalleryStage photos={data.gallery} start={openPhoto} schoolName={school.name} onClose={() => setOpenPhoto(null)} />
       ) : null}
-    </article>
-  );
-}
-
-function PhotoAvatar({ id, cx, cy, r, src }) {
-  return (
-    <g>
-      <circle cx={cx} cy={cy} r={r + 4} fill="#ffffff" />
-      <clipPath id={id}>
-        <circle cx={cx} cy={cy} r={r} />
-      </clipPath>
-      <image href={src} x={cx - r} y={cy - r} width={r * 2} height={r * 2} preserveAspectRatio="xMidYMid slice" clipPath={`url(#${id})`} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#ffffff" strokeWidth="3" />
-    </g>
+    </div>
   );
 }
 
 function GateSignals() {
-  const marksPath = "M156 348 C118 300, 132 250, 168 214";
-  const disciplinePath = "M244 348 C282 300, 268 250, 232 214";
-  return (
-    <svg className="gate-photo" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label={t("Signals carry marks and a discipline notice from the teachers' computers to the parents' phones")}>
-      <defs>
-        <marker id="gateArrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-          <path d="M0 0 L10 5 L0 10 Z" fill="#0D47A1" />
-        </marker>
-        <marker id="gateArrowSky" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
-          <path d="M0 0 L10 5 L0 10 Z" fill="#0277BD" />
-        </marker>
-      </defs>
-      <rect width="400" height="520" fill="#e7f4fc" />
-      <rect x="16" y="48" width="368" height="196" rx="32" fill="#ffffff" />
-      <text x="96" y="78" textAnchor="middle" fill="#0D47A1" fontSize="12" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Parent")}</text>
-      <text x="304" y="78" textAnchor="middle" fill="#0D47A1" fontSize="12" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Parent")}</text>
-      <PhotoAvatar id="mom" cx={96} cy={138} r={40} src="/avatar-mother.jpg?v=1" />
-      <PhotoAvatar id="dad" cx={304} cy={138} r={40} src="/avatar-father.jpg?v=1" />
-      <rect x="146" y="108" width="52" height="72" rx="8" fill="#0D47A1" />
-      <rect x="150" y="114" width="44" height="58" rx="4" fill="#ffffff" />
-      <text x="172" y="140" textAnchor="middle" fill="#0D47A1" fontSize="11" fontWeight="800" fontFamily="Instrument Sans, sans-serif">94/100</text>
-      <text x="172" y="156" textAnchor="middle" fill="#1565C0" fontSize="9" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Marks")}</text>
-      <g className="gate-wave">
-        <path d="M202 128 q8 -7 0 -14" fill="none" stroke="#0D47A1" strokeWidth="2" strokeLinecap="round" />
-        <path d="M210 132 q14 -11 0 -22" fill="none" stroke="#4FC3F7" strokeWidth="2" strokeLinecap="round" />
-      </g>
-      <rect x="202" y="108" width="52" height="72" rx="8" fill="#0277BD" />
-      <rect x="206" y="114" width="44" height="58" rx="4" fill="#ffffff" />
-      <text x="228" y="140" textAnchor="middle" fill="#0277BD" fontSize="9" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("Discipline")}</text>
-      <text x="228" y="156" textAnchor="middle" fill="#1565C0" fontSize="9" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("SMS")}</text>
-      <g className="gate-wave late">
-        <path d="M198 128 q-8 -7 0 -14" fill="none" stroke="#0277BD" strokeWidth="2" strokeLinecap="round" />
-        <path d="M190 132 q-14 -11 0 -22" fill="none" stroke="#4FC3F7" strokeWidth="2" strokeLinecap="round" />
-      </g>
-      <rect x="36" y="430" width="140" height="14" rx="6" fill="#d7c4a3" />
-      <rect x="224" y="430" width="140" height="14" rx="6" fill="#d7c4a3" />
-      <rect x="112" y="352" width="88" height="72" rx="10" fill="#0D47A1" />
-      <rect x="120" y="360" width="72" height="48" rx="6" fill="#ffffff" />
-      <text x="156" y="380" textAnchor="middle" fill="#0D47A1" fontSize="13" fontWeight="800" fontFamily="Instrument Sans, sans-serif">94/100</text>
-      <text x="156" y="396" textAnchor="middle" fill="#1565C0" fontSize="9" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Marks")}</text>
-      <rect x="136" y="412" width="40" height="7" rx="2" fill="#90CAF9" />
-      <rect x="200" y="352" width="88" height="72" rx="10" fill="#0277BD" />
-      <rect x="208" y="360" width="72" height="48" rx="6" fill="#ffffff" />
-      <text x="244" y="388" textAnchor="middle" fill="#0277BD" fontSize="11" fontWeight="800" fontFamily="Instrument Sans, sans-serif">{t("Discipline")}</text>
-      <rect x="224" y="412" width="40" height="7" rx="2" fill="#90CAF9" />
-      <PhotoAvatar id="teacher" cx={64} cy={392} r={42} src="/avatar-teacher.jpg?v=1" />
-      <PhotoAvatar id="officer" cx={336} cy={392} r={42} src="/avatar-officer.jpg?v=1" />
-      <text x="64" y="470" textAnchor="middle" fill="#0D47A1" fontSize="12" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Teacher")}</text>
-      <text x="318" y="470" textAnchor="middle" fill="#0277BD" fontSize="11" fontWeight="700" fontFamily="Instrument Sans, sans-serif">{t("Discipline officer")}</text>
-      <path d={marksPath} fill="none" stroke="#ffffff" strokeWidth="10" strokeLinecap="round" />
-      <path className="gate-signal" d={marksPath} fill="none" stroke="#0D47A1" strokeWidth="3.5" strokeLinecap="round" markerEnd="url(#gateArrow)" />
-      <circle r="7" fill="#0D47A1" stroke="#ffffff" strokeWidth="2">
-        <animateMotion dur="2.2s" repeatCount="indefinite" path={marksPath} />
-      </circle>
-      <path d={disciplinePath} fill="none" stroke="#ffffff" strokeWidth="10" strokeLinecap="round" />
-      <path className="gate-signal late" d={disciplinePath} fill="none" stroke="#0277BD" strokeWidth="3.5" strokeLinecap="round" markerEnd="url(#gateArrowSky)" />
-      <circle r="7" fill="#0277BD" stroke="#ffffff" strokeWidth="2">
-        <animateMotion dur="2.2s" begin="0.6s" repeatCount="indefinite" path={disciplinePath} />
-      </circle>
-    </svg>
-  );
+  return <img className="gate-photo" src="/login-profile.jpg" alt="" />;
 }
 
-const GATE_PHOTOS = ["/avatar-mother.jpg?v=1", "/avatar-father.jpg?v=1", "/avatar-teacher.jpg?v=1", "/avatar-officer.jpg?v=1"];
+const GATE_PHOTOS = ["/login-profile.jpg"];
 
 function GateSkeleton() {
   return (
@@ -2341,6 +2332,7 @@ function Gate({ onSignIn }) {
         </label>
         {error ? <p className="banner">{error}</p> : null}
         <button className="solid" type="submit">{t("Sign in")}</button>
+        <button className="ghost" type="button" onClick={() => go("#/parent")}>{t("Parent portal")}</button>
       </form>
     </section>
   );

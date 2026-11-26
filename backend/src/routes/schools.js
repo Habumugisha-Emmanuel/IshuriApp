@@ -9,7 +9,7 @@ const { optionalMsisdn } = require("../utils/phone");
 function storedPhone(raw, label) {
   if (raw === undefined || raw === null || String(raw).trim() === "") return "";
   const phone = optionalMsisdn(raw);
-  if (!phone) throw new ApiError(400, `${label} must begin with 250, for example 250788000000.`);
+  if (!phone) throw new ApiError(400, `${label} must be 10 digits and start with 07.`);
   return phone;
 }
 

@@ -14,7 +14,7 @@ function logoSrc(person) {
   return media(url);
 }
 
-function ChatMark({ person }) {
+function ChatMark({ person, active }) {
   const imgRef = useRef(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -31,13 +31,49 @@ function ChatMark({ person }) {
     setReady(false);
     setFailed(false);
   }, [src]);
-  if (!src || failed) return <span className="chat-avatar chat-avatar-empty" aria-hidden="true" />;
+  const face = !src || failed
+    ? <span className="chat-avatar chat-avatar-empty" aria-hidden="true" />
+    : (
+      <span className={`chat-avatar soft-frame${ready ? " is-ready" : ""}`}>
+        <span className="soft-ph" aria-hidden="true" />
+        <img ref={imgRef} src={src} alt="" onLoad={() => { setFailed(false); setReady(true); }} onError={() => setFailed(true)} />
+      </span>
+    );
   return (
-    <span className={`chat-avatar soft-frame${ready ? " is-ready" : ""}`}>
-      <span className="soft-ph" aria-hidden="true" />
-      <img ref={imgRef} src={src} alt="" onLoad={() => { setFailed(false); setReady(true); }} onError={() => setFailed(true)} />
+    <span className="chat-face">
+      {face}
+      {typeof active === "boolean" ? <i className={`presence-dot${active ? " is-active" : ""}`} aria-hidden="true" /> : null}
     </span>
   );
+}
+
+export function typingLine(rows) {
+  const names = (rows || []).map((row) => row.name || row).filter(Boolean);
+  if (!names.length) return "";
+  if (names.length === 1) return t("{name} is typing", { name: names[0] });
+  if (names.length === 2) return t("{first} and {second} are typing", { first: names[0], second: names[1] });
+  return t("{name} and {count} others are typing", { name: names[0], count: names.length - 1 });
+}
+
+function groupSubtitle(peer, typing) {
+  const live = typingLine(typing);
+  if (live) return live;
+  const names = (peer?.people || []).filter((person) => !person.mine).map((person) => person.fullName).filter(Boolean);
+  if (names.length) {
+    const preview = names.slice(0, 3).join(", ");
+    return names.length > 3 ? `${preview}…` : preview;
+  }
+  return t("{count} members", { count: peer?.members || 0 });
+}
+
+function presenceLine(peer, typing) {
+  const live = typingLine(typing);
+  if (live) return live;
+  if (!peer) return "";
+  if (peer.role === "group") return groupSubtitle(peer, typing);
+  if (peer.active) return t("Active now");
+  if (peer.lastSeenAt) return `${t("Offline")} · ${t("Last seen {time}", { time: when(peer.lastSeenAt) })}`;
+  return t("Offline");
 }
 
 function when(value) {
@@ -50,9 +86,36 @@ function when(value) {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function chatPath(peerId) {
+  if (peerId === "group") return "/chat/group";
+  if (String(peerId || "").startsWith("family/")) return `/chat/family/${String(peerId).slice("family/".length)}`;
+  return `/chat/with/${peerId}`;
+}
+
+function roleShort(role) {
+  return {
+    school_admin: t("Director"),
+    teacher: t("Teacher"),
+    dos: t("Director of Studies"),
+    discipline: t("Discipline"),
+    accountant: t("Accountant"),
+    parent: t("Parent"),
+  }[role] || "";
+}
+
 function peerLine(peer) {
   if (!peer) return "";
+  if (peer.role === "group") return t("Everyone on the school staff");
+  if (peer.role === "parent") return peer.note === "Private" ? t("Private") : t("Parent");
   if (peer.role === "super_admin") return "IshuriApp";
+  const role = {
+    school_admin: t("Director"),
+    teacher: t("Teacher"),
+    dos: t("Director of Studies"),
+    discipline: t("Discipline"),
+    accountant: t("Accountant"),
+  }[peer.role];
+  if (role && peer.schoolName) return `${role} · ${peer.schoolName}`;
   return peer.schoolName || "School";
 }
 
@@ -182,10 +245,10 @@ export function MessageBell({ inbox, activePeer, onOpen }) {
         >
           {flash ? (
             <button className="msg-flash" type="button" onClick={() => openPeer(flash.peer.id)}>
-              <ChatMark person={flash.peer} />
+              <ChatMark person={flash.peer} active={Boolean(flash.peer.active)} />
               <span className="msg-copy">
-                <strong>{flash.peer.fullName}</strong>
-                <em>{flash.lastBody}</em>
+                <strong>{flash.peer.role === "group" ? t("School group") : flash.peer.fullName}</strong>
+                <em className={flash.typing?.length ? "is-typing" : ""}>{flash.typing?.length ? typingLine(flash.typing) : flash.lastBody}</em>
               </span>
             </button>
           ) : null}
@@ -197,10 +260,10 @@ export function MessageBell({ inbox, activePeer, onOpen }) {
               </header>
               {items.length ? items.slice(0, 8).map((item) => (
                 <button key={item.threadId} type="button" className={item.unread ? "unread" : ""} onClick={() => openPeer(item.peer.id)}>
-                  <ChatMark person={item.peer} />
+                  <ChatMark person={item.peer} active={Boolean(item.peer.active)} />
                   <span className="msg-copy">
-                    <strong>{item.peer.fullName}</strong>
-                    <em>{item.lastMine ? "You: " : ""}{item.lastBody}</em>
+                    <strong>{item.peer.role === "group" ? t("School group") : item.peer.fullName}</strong>
+                    <em className={item.typing?.length ? "is-typing" : ""}>{item.typing?.length ? typingLine(item.typing) : `${item.lastMine ? t("You: ") : ""}${item.lastBody}`}</em>
                   </span>
                   <span className="msg-meta">
                     <time>{when(item.lastAt)}</time>
@@ -253,6 +316,7 @@ function quoteText(reply) {
 export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
   const [people, setPeople] = useState([]);
   const [peopleReady, setPeopleReady] = useState(false);
+  const [canGroup, setCanGroup] = useState(false);
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState([]);
   const [pending, setPending] = useState([]);
@@ -262,7 +326,10 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
   const [menuId, setMenuId] = useState(null);
   const [confirmUnsend, setConfirmUnsend] = useState("");
   const [editing, setEditing] = useState(null);
-  const [peerTyping, setPeerTyping] = useState(false);
+  const [typing, setTyping] = useState([]);
+  const [rosterOpen, setRosterOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [dropId, setDropId] = useState("");
   const [loading, setLoading] = useState(false);
   const scroller = useRef(null);
   const stick = useRef(true);
@@ -271,7 +338,7 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
   useEffect(() => {
     let stop = false;
     api("/chat/people", { token })
-      .then((data) => { if (!stop) setPeople(data.items || []); })
+      .then((data) => { if (!stop) { setPeople(data.items || []); setCanGroup(Boolean(data.group)); } })
       .catch((err) => { if (!stop) notify("Messages", err.message, "bad"); })
       .finally(() => { if (!stop) setPeopleReady(true); });
     return () => { stop = true; };
@@ -285,17 +352,20 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
       setReply(null);
       setEditing(null);
       setMenuId(null);
-      setPeerTyping(false);
+      setTyping([]);
+      setRosterOpen(false);
+      setAddOpen(false);
+      setDropId("");
       return undefined;
     }
     let stop = false;
     setLoading(true);
     setPending([]);
-    const load = (quiet) => api(`/chat/with/${peerId}?seen=1`, { token })
+    const load = (quiet) => api(`${chatPath(peerId)}?seen=1`, { token })
       .then((data) => {
         if (stop) return;
         setPeer(data.peer);
-        setPeerTyping(Boolean(data.peerTyping));
+        setTyping(data.typing || []);
         setMessages((current) => (quiet ? mergeMessages(current, data.items || []) : data.items || []));
         setLoading(false);
         onInbox();
@@ -318,15 +388,15 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
   useEffect(() => {
     const node = scroller.current;
     if (stick.current && node) node.scrollTop = node.scrollHeight;
-  }, [messages, pending, peerId, peerTyping]);
+  }, [messages, pending, peerId, typing]);
 
   useEffect(() => {
-    if (!peerId || !draft.trim()) return undefined;
+    if (!peerId || !draft.trim() || editing) return undefined;
     const timer = setTimeout(() => {
-      api(`/chat/with/${peerId}/typing`, { token, method: "POST", body: {} }).catch(() => {});
+      api(`${chatPath(peerId)}/typing`, { token, method: "POST", body: {}, quiet: true }).catch(() => {});
     }, 400);
     return () => clearTimeout(timer);
-  }, [draft, peerId, token]);
+  }, [draft, peerId, token, editing]);
 
   const known = useMemo(() => new Set((inbox?.items || []).map((item) => String(item.peer.id))), [inbox]);
   const needle = query.trim().toLowerCase();
@@ -334,14 +404,15 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
     if (!needle) return true;
     return `${person.fullName} ${peerLine(person)}`.toLowerCase().includes(needle);
   };
-  const conversations = (inbox?.items || []).filter((item) => matches(item.peer));
+  const groupRow = (inbox?.items || []).find((item) => item.peer?.id === "group");
+  const conversations = (inbox?.items || []).filter((item) => item.peer?.id !== "group" && matches(item.peer));
   const others = people.filter((person) => !known.has(String(person.id)) && matches(person));
   const shown = [...messages, ...pending];
 
   async function deliver(localId, text, extra = {}) {
     setPending((current) => current.map((item) => (item.id === localId ? { ...item, status: "pending" } : item)));
     try {
-      const data = await api(`/chat/with/${peerId}`, {
+      const data = await api(chatPath(peerId), {
         token,
         method: "POST",
         body: { body: text, kind: extra.kind, replyTo: extra.replyTo },
@@ -447,24 +518,63 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
     setMenuId(null);
   }
 
+  async function changeMember(userId, removing) {
+    try {
+      const data = await api(removing ? `/chat/group/members/${userId}` : "/chat/group/members", {
+        token,
+        method: removing ? "DELETE" : "POST",
+        body: removing ? undefined : { userId },
+      });
+      if (data.peer) setPeer(data.peer);
+      setDropId("");
+      onInbox();
+    } catch (err) {
+      notify("School group", err.message, "bad");
+    }
+  }
+
   const lastMineId = [...shown].reverse().find((item) => item.mine)?.id;
   const picked = shown.find((item) => item.id === menuId && !item.unsent);
   let lastDay = "";
 
   return (
-    <div className={`chat-shell${peerId ? " chat-open" : ""}`}>
+    <div className={`chat-shell${peerId ? " chat-open" : ""}${rosterOpen && peer?.role === "group" ? " has-info" : ""}`}>
       <aside className="chat-list">
         <header>
           <h2>{t("Messages")}</h2>
           <input value={query} placeholder={t("Search people")} onChange={(event) => setQuery(event.target.value)} />
         </header>
         <div className="chat-people">
+          {canGroup ? (
+            <button type="button" className={peerId === "group" ? "on" : ""} onClick={() => onOpen("group")}>
+              <span className="chat-face">
+                <span className="chat-avatar chat-avatar-empty" aria-hidden="true"><Icon name="people" /></span>
+                <i className={`presence-dot${groupRow?.peer?.active ? " is-active" : ""}`} aria-hidden="true" />
+              </span>
+              <span className="msg-copy">
+                <strong>{t("School group")}</strong>
+                <em className={groupRow?.typing?.length ? "is-typing" : ""}>
+                  {groupRow?.typing?.length
+                    ? typingLine(groupRow.typing)
+                    : groupRow?.lastBody
+                      ? `${groupRow.lastMine ? t("You: ") : ""}${groupRow.lastBody}`
+                      : t("{count} members", { count: groupRow?.peer?.members || 0 })}
+                </em>
+              </span>
+              <span className="msg-meta">
+                {groupRow ? <time>{when(groupRow.lastAt)}</time> : null}
+                {groupRow?.unread ? <b>{groupRow.unread}</b> : null}
+              </span>
+            </button>
+          ) : null}
           {conversations.map((item) => (
             <button key={item.threadId} type="button" className={String(peerId) === String(item.peer.id) ? "on" : ""} onClick={() => onOpen(item.peer.id)}>
-              <ChatMark person={item.peer} />
+              <ChatMark person={item.peer} active={Boolean(item.peer.active)} />
               <span className="msg-copy">
-                <strong>{item.peer.fullName}</strong>
-                <em>{peerLine(item.peer)} · {item.lastMine ? t("You: ") : ""}{item.lastBody}</em>
+                <strong>{item.peer.role === "group" ? t("School group") : item.peer.fullName}</strong>
+                <em className={item.typing?.length ? "is-typing" : ""}>
+                  {item.typing?.length ? typingLine(item.typing) : `${peerLine(item.peer)} · ${item.lastMine ? t("You: ") : ""}${item.lastBody}`}
+                </em>
               </span>
               <span className="msg-meta">
                 <time>{when(item.lastAt)}</time>
@@ -476,7 +586,7 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
           {others.length ? <p className="chat-label">{t("Start a chat")}</p> : null}
           {others.map((person) => (
             <button key={person.id} type="button" className={String(peerId) === String(person.id) ? "on" : ""} onClick={() => onOpen(person.id)}>
-              <ChatMark person={person} />
+              <ChatMark person={person} active={Boolean(person.active)} />
               <span className="msg-copy">
                 <strong>{person.fullName}</strong>
                 <em>{peerLine(person)}</em>
@@ -501,11 +611,18 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
           <>
             <header className="chat-thread-head">
               <button className="chat-back" type="button" onClick={() => onOpen("")}>{t("Back")}</button>
-              <ChatMark person={peer} />
-              <span>
-                <strong>{peer.fullName}</strong>
-                <em>{peerTyping ? "typing…" : peerLine(peer)}</em>
-              </span>
+              <ChatMark person={peer} active={peer.role === "group" ? Boolean(peer.activeCount) : Boolean(peer.active)} />
+              {peer.role === "group" ? (
+                <button type="button" className="chat-head-main" aria-expanded={rosterOpen} onClick={() => { setRosterOpen((open) => !open); setAddOpen(false); setDropId(""); }}>
+                  <strong>{t("School group")}</strong>
+                  <em className={typing.length ? "is-typing" : ""}>{groupSubtitle(peer, typing)}</em>
+                </button>
+              ) : (
+                <span className="chat-head-main">
+                  <strong>{peer.fullName}</strong>
+                  <em className={typing.length ? "is-typing" : ""}>{presenceLine(peer, typing)}</em>
+                </span>
+              )}
             </header>
             <div
               className="chat-log"
@@ -530,7 +647,7 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
                 return (
                   <div key={item.id} className="chat-row">
                     {showDay ? <p className="chat-day">{label}</p> : null}
-                    <article className={`${item.mine ? "mine" : "theirs"}${item.kind === "like" ? " like" : ""}${item.unsent ? " unsent" : ""}${open ? " picked" : ""}`}>
+                    <article className={`${item.mine ? "mine" : "theirs"}${item.kind === "like" ? " like" : ""}${item.unsent ? " unsent" : ""}${open ? " picked" : ""}${peer.role === "group" ? " wa" : ""}`}>
                       {item.unsent ? (
                         <p className="bubble">{t("Message unsent")}</p>
                       ) : (
@@ -547,26 +664,31 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
                             react(item, "❤️");
                           }}
                         >
-                          {item.reply ? <span className="chat-quote">{item.reply.mine ? "You" : peer.fullName}<br />{quoteText(item.reply)}</span> : null}
+                          {item.reply ? <span className="chat-quote">{item.reply.mine ? t("You") : (item.reply.name || (peer.role === "group" ? t("School group") : peer.fullName))}<br />{quoteText(item.reply)}</span> : null}
+                          {!item.mine && item.senderName && (peer.role === "group" || peer.role === "parent") ? <b className="chat-who">{item.senderName}{roleShort(item.senderRole) ? ` · ${roleShort(item.senderRole)}` : ""}</b> : null}
                           {item.kind === "like" ? <span className="heart">❤️</span> : item.body}
                           {item.edited ? <small className="chat-edited">{t("Edited")}</small> : null}
+                          {peer.role === "group" ? <small className="wa-time">{when(item.createdAt)}</small> : null}
                         </button>
                       )}
                       {item.reactions?.length ? <span className="chat-reactions">{reactionLine(item.reactions)}</span> : null}
-                      {item.id === lastMineId ? (
+                          {item.id === lastMineId && item.status === "failed" ? (
                         <footer>
-                          {item.status === "failed" ? (
-                            <button type="button" onClick={() => deliver(item.id, item.body, { kind: item.kind, replyTo: item.reply?.id })}>{t("Not sent · Retry")}</button>
-                          ) : (
-                            <span>{receipt(item)} · {when(item.createdAt)}</span>
-                          )}
+                          <button type="button" onClick={() => deliver(item.id, item.body, { kind: item.kind, replyTo: item.reply?.id })}>{t("Not sent · Retry")}</button>
                         </footer>
+                      ) : item.id === lastMineId && peer.role !== "group" ? (
+                        <footer><span>{`${receipt(item)} · ${when(item.createdAt)}`}</span></footer>
                       ) : null}
                     </article>
                   </div>
                 );
               })}
-              {peerTyping ? <p className="chat-typing" aria-live="polite"><i /><i /><i /></p> : null}
+              {typing.length ? (
+                <p className="chat-typing" aria-live="polite">
+                  <i /><i /><i />
+                  <span>{typingLine(typing)}</span>
+                </p>
+              ) : null}
             </div>
             <div className="chat-dock">
               {picked ? (
@@ -600,7 +722,7 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
               {reply ? (
                 <div className="chat-reply-bar">
                   <span>
-                    <strong>{reply.mine ? t("Replying to yourself") : t("Replying to {name}", { name: peer.fullName })}</strong>
+                    <strong>{reply.mine ? t("Replying to yourself") : t("Replying to {name}", { name: reply.senderName || (peer.role === "group" ? t("School group") : peer.fullName) })}</strong>
                     <em>{quoteText(reply)}</em>
                   </span>
                   <button type="button" aria-label={t("Cancel reply")} onClick={() => setReply(null)}>{t("×")}</button>
@@ -642,6 +764,70 @@ export function LiveChat({ token, peerId, inbox, onInbox, onOpen }) {
           </div>
         )}
       </section>
+      {rosterOpen && peer?.role === "group" ? (
+        <aside className="wa-info">
+          <div className="wa-hero">
+            <button type="button" className="wa-close" onClick={() => { setRosterOpen(false); setAddOpen(false); setDropId(""); }}>{t("Close")}</button>
+            <span className="wa-mark"><Icon name="people" /></span>
+            <strong>{t("School group")}</strong>
+            <em>{t("{count} members", { count: peer.members || (peer.people || []).length })}</em>
+            <p>{t("The director manages this group.")}</p>
+          </div>
+          {peer.canManage ? (
+            <button type="button" className="wa-add" onClick={() => { setAddOpen((open) => !open); setDropId(""); }}>
+              <Icon name="people" />
+              {t("Add member")}
+            </button>
+          ) : null}
+          {addOpen && peer.canManage ? (
+            <div className="wa-outside">
+              {(peer.outside || []).length ? (peer.outside || []).map((person) => (
+                <button type="button" key={person.id} onClick={() => changeMember(person.id, false)}>
+                  <span className="wa-letter" style={{ background: memberColor(person.fullName) }}>{memberLetter(person.fullName)}</span>
+                  <span>
+                    <strong>{person.fullName}</strong>
+                    <em>{roleShort(person.role)}</em>
+                  </span>
+                  <b>{t("Add member")}</b>
+                </button>
+              )) : <p className="chat-quiet">{t("Everyone on the school staff is already in this group.")}</p>}
+            </div>
+          ) : (
+            <div className="wa-members">
+              {(peer.people || []).map((person) => (
+                <div className="wa-member" key={person.id}>
+                  <span className="chat-face">
+                    <span className="wa-letter" style={{ background: memberColor(person.fullName) }}>{memberLetter(person.fullName)}</span>
+                    <i className={`presence-dot${person.active ? " is-active" : ""}`} aria-hidden="true" />
+                  </span>
+                  <span>
+                    <strong>{person.mine ? t("You") : person.fullName}</strong>
+                    <em>{person.admin ? t("Group admin") : person.active ? t("Active now") : person.lastSeenAt ? t("Last seen {time}", { time: when(person.lastSeenAt) }) : (roleShort(person.role) || t("Offline"))}</em>
+                    {dropId === String(person.id) ? <em className="wa-ask">{t("Remove {name} from this group?", { name: person.fullName })}</em> : null}
+                  </span>
+                  {peer.canManage && !person.admin ? (
+                    dropId === String(person.id) ? (
+                      <button type="button" className="danger" onClick={() => changeMember(person.id, true)}>{t("Remove")}</button>
+                    ) : (
+                      <button type="button" className="wa-more" aria-label={t("Remove")} onClick={() => setDropId(String(person.id))}>×</button>
+                    )
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </aside>
+      ) : null}
     </div>
   );
+}
+
+function memberLetter(name) {
+  return (String(name || "?").trim()[0] || "?").toUpperCase();
+}
+
+function memberColor(name) {
+  const colors = ["#0d47a1", "#1565c0", "#0277bd", "#00838f", "#01579b"];
+  const letter = memberLetter(name);
+  return colors[letter.charCodeAt(0) % colors.length];
 }

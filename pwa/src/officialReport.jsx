@@ -1,6 +1,7 @@
 import { t } from "./i18n.js";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { media } from "./api.js";
 
 export const APP_LOGO = "/logo-512.png";
 
@@ -28,8 +29,41 @@ function percentText(value) {
 
 function SchoolMark({ school }) {
   const [failed, setFailed] = useState(false);
-  if (!school?.logoUrl || failed) return <em>{t("School logo")}</em>;
-  return <img src={school.logoUrl} alt={`${school.name || "School"} logo`} onError={() => setFailed(true)} />;
+  const src = media(school?.logoUrl);
+  if (!src || failed) return <em>{t("School logo")}</em>;
+  return <img src={src} alt={`${school.name || "School"} logo`} onError={() => setFailed(true)} />;
+}
+
+export function schoolAddress(school) {
+  const place = school?.location || {};
+  return String(place.address || "").trim() || [place.sector, place.district, place.province].filter(Boolean).join(", ");
+}
+
+export function printedOn() {
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "Africa/Kigali" }).format(new Date());
+}
+
+export function PrintHeading({ school, title, note }) {
+  const address = schoolAddress(school);
+  return (
+    <header className="doc-head">
+      <div className="logo-slot">
+        <img src={APP_LOGO} alt={t("IshuriApp")} />
+        <span>{t("IshuriApp")}</span>
+      </div>
+      <div className="doc-identity">
+        <p className="doc-kicker">{school?.name}</p>
+        <h1>{title}</h1>
+        {address ? <p className="doc-place">{t("Address")}: {address}</p> : null}
+        <p className="doc-place">{t("Printed on {date}", { date: printedOn() })}</p>
+        {note ? <p className="doc-place">{note}</p> : null}
+      </div>
+      <div className="logo-slot">
+        <SchoolMark school={school} />
+        <span>{school?.name || t("School")}</span>
+      </div>
+    </header>
+  );
 }
 
 export function ReportLogos({ school }) {
@@ -59,6 +93,8 @@ function DocHeader({ school, kicker, title }) {
         <p className="doc-kicker">{t(kicker)}</p>
         <h1>{t(title)}</h1>
         <p className="doc-school">{school?.name}</p>
+        {schoolAddress(school) ? <p className="doc-place">{t("Address")}: {schoolAddress(school)}</p> : null}
+        <p className="doc-place">{t("Printed on {date}", { date: printedOn() })}</p>
         {school?.motto ? <p className="doc-motto">{school.motto}</p> : null}
         {contact ? <p className="doc-place">{contact}</p> : null}
       </div>
@@ -190,6 +226,34 @@ function DisciplineSheet({ report, item }) {
       </section>
       <Signatures labels={["Discipline officer", "School administration", "Parent / guardian"]} />
     </article>
+  );
+}
+
+export function ReportPrint({ title, school, note, onClose, children, bare = false }) {
+  useEffect(() => {
+    document.body.classList.add("doc-open");
+    const onKey = (event) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.classList.remove("doc-open");
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [onClose]);
+  return createPortal(
+    <div className="doc-preview is-landscape" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="doc-toolbar no-print">
+        <strong>{title}</strong>
+        <button className="solid" type="button" onClick={() => window.print()}>{t("Print / Save PDF")}</button>
+        <button className="ghost" type="button" onClick={onClose}>{t("Close")}</button>
+      </div>
+      <div className="doc-sheet">
+        <article className="doc-student">
+          {bare ? null : <PrintHeading school={school} title={title} note={note} />}
+          {children}
+        </article>
+      </div>
+    </div>,
+    document.body
   );
 }
 

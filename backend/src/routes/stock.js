@@ -5,7 +5,7 @@ const { StockItem, StockMovement } = require("../models");
 const { authRequired, requireRoles, requireSchoolScope } = require("../middleware/auth");
 
 const router = express.Router();
-router.use(authRequired, requireSchoolScope, requireRoles("school_admin"));
+router.use(authRequired, requireSchoolScope, requireRoles("accountant"));
 
 router.get(
   "/items",

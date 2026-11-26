@@ -2,33 +2,41 @@ import { t } from "./i18n.js";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "./api.js";
 import { Icon } from "./icons.jsx";
+import { ReportPrint } from "./officialReport.jsx";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const PERIODS = [
-  { id: "day", label: "Today", icon: "clock" },
-  { id: "week", label: "This week", icon: "calendar" },
-  { id: "month", label: "Month", icon: "calendar" },
-  { id: "year", label: "Year", icon: "chart" },
+  { id: "all", label: "All dates" },
+  { id: "day", label: "Daily" },
+  { id: "week", label: "Weekly" },
+  { id: "month", label: "Monthly" },
+  { id: "year", label: "Yearly" },
 ];
 
-const BILLING = [
-  { id: "all", label: "All messages", icon: "message" },
-  { id: "paid", label: "Paid", icon: "check" },
-  { id: "unpaid", label: "Unpaid", icon: "alert" },
+const DELIVERY = [
+  { id: "all", label: "All messages" },
+  { id: "sent", label: "Sent" },
+  { id: "unsent", label: "Unsent" },
 ];
 
 const CATEGORIES = [
-  { id: "marks", label: "Marks", color: "#1565C0", icon: "pen" },
-  { id: "results", label: "Term results", color: "#2E7D32", icon: "award" },
-  { id: "discipline", label: "Discipline", color: "#E65100", icon: "scale" },
-  { id: "notice", label: "School notice", color: "#6A1B9A", icon: "megaphone" },
+  { id: "marks", label: "Marks", icon: "pen" },
+  { id: "results", label: "Term results", icon: "award" },
+  { id: "discipline", label: "Discipline", icon: "scale" },
+  { id: "notice", label: "School notice", icon: "megaphone" },
+];
+
+const ACCOUNTANT_KINDS = [
+  { id: "status", label: "Student status", icon: "people" },
+  { id: "reminder", label: "Reminder", icon: "alert" },
+  { id: "special", label: "Special message", icon: "message" },
 ];
 
 function kigaliNow() {
-  const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Kigali", year: "numeric", month: "2-digit" }).format(new Date());
-  const [year, month] = stamp.split("-").map(Number);
-  return { year, month };
+  const stamp = new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Kigali", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const [year, month, day] = stamp.split("-").map(Number);
+  return { year, month, day, on: stamp };
 }
 
 function percent(value, total) {
@@ -36,191 +44,76 @@ function percent(value, total) {
   return Math.round((value / total) * 100);
 }
 
-function PieChart({ slices, hole, label }) {
-  const total = slices.reduce((sum, slice) => sum + slice.value, 0);
-  let cursor = 0;
-  const parts = slices.filter((slice) => slice.value > 0);
-  const gradient = parts.length
-    ? `conic-gradient(${parts.map((slice) => {
-        const start = cursor;
-        cursor += (slice.value / total) * 360;
-        return `${slice.color} ${start}deg ${cursor}deg`;
-      }).join(", ")})`
-    : "conic-gradient(#e6ebf1 0deg 360deg)";
-  return (
-    <div className={hole ? "pie pie-donut" : "pie"} style={{ background: gradient }} role="img" aria-label={label}>
-      {hole ? (
-        <div className="pie-hole">
-          <strong>{total}</strong>
-          <span>{t("total")}</span>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function chartPoints(series, width, height) {
-  const pad = { l: 8, r: 36, t: 18, b: 28 };
-  const values = series.map((point) => point.messages);
-  const max = Math.max(1, ...values);
-  const innerW = width - pad.l - pad.r;
-  const innerH = height - pad.t - pad.b;
-  const step = values.length > 1 ? innerW / (values.length - 1) : 0;
-  const coords = values.map((value, index) => [
-    pad.l + (values.length === 1 ? innerW / 2 : index * step),
-    pad.t + innerH - (value / max) * innerH,
-  ]);
-  return { pad, max, innerH, coords, width, height };
-}
-
-function PlotGuides({ width, height, pad }) {
-  const innerH = height - pad.t - pad.b;
-  return [0.5, 1].map((mark) => {
-    const y = pad.t + innerH * (1 - mark);
-    return <line key={mark} x1={pad.l} x2={width - pad.r} y1={y} y2={y} stroke="#d6e6f5" strokeWidth="1" />;
-  });
-}
-
-function AreaGraph({ series, tone = "strong" }) {
-  const width = 420;
-  const height = 188;
-  const drawn = series.length ? series : [{ label: "", messages: 0 }];
-  const { pad, max, coords } = chartPoints(drawn, width, height);
-  const line = coords.map((point, index) => `${index ? "L" : "M"}${point[0].toFixed(1)},${point[1].toFixed(1)}`).join(" ");
-  const base = height - pad.b;
-  const area = `${line} L${coords[coords.length - 1][0].toFixed(1)},${base} L${coords[0][0].toFixed(1)},${base} Z`;
-  const stroke = "#0D47A1";
-  const fill = tone === "soft" ? "rgba(79,195,247,0.55)" : "rgba(21,101,192,0.28)";
-  return (
-    <svg className="studio-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t("Messages over time")}>
-      <PlotGuides width={width} height={height} pad={pad} />
-      <path d={area} fill={fill} />
-      <path d={line} fill="none" stroke={stroke} strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
-      {drawn.length <= 16 ? coords.map((point, index) => (
-        drawn[index].messages ? <circle key={drawn[index].bucket || index} cx={point[0]} cy={point[1]} r="4" fill="#ffffff" stroke="#0D47A1" strokeWidth="2.4" /> : null
-      )) : null}
-      <text x={width - 6} y="14" textAnchor="end" className="studio-axis">{max}</text>
-      <text x={pad.l} y={height - 8} className="studio-axis">{drawn[0]?.label || ""}</text>
-      <text x={width - pad.r} y={height - 8} textAnchor="end" className="studio-axis">{drawn[drawn.length - 1]?.label || ""}</text>
-    </svg>
-  );
-}
-
-function LineGraph({ series }) {
-  const width = 360;
-  const height = 188;
-  const drawn = series.length ? series : [{ label: "", messages: 0 }];
-  const { pad, max, coords } = chartPoints(drawn, width, height);
-  const line = coords.map((point, index) => `${index ? "L" : "M"}${point[0].toFixed(1)},${point[1].toFixed(1)}`).join(" ");
-  return (
-    <svg className="studio-svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={t("Message line")}>
-      <PlotGuides width={width} height={height} pad={pad} />
-      <path d={line} fill="none" stroke="#1565C0" strokeWidth="3.5" strokeLinejoin="round" strokeLinecap="round" />
-      {drawn.length <= 16 ? coords.map((point, index) => (
-        <circle key={drawn[index].bucket || index} cx={point[0]} cy={point[1]} r={drawn[index].messages ? 4.5 : 2.5} fill={drawn[index].messages ? "#1565C0" : "#d6e6f5"} stroke="#ffffff" strokeWidth="1.5" />
-      )) : null}
-      <text x={width - 6} y="14" textAnchor="end" className="studio-axis">{max}</text>
-      <text x={pad.l} y={height - 8} className="studio-axis">{drawn[0]?.label || ""}</text>
-      <text x={width - pad.r} y={height - 8} textAnchor="end" className="studio-axis">{drawn[drawn.length - 1]?.label || ""}</text>
-    </svg>
-  );
-}
-
-function Gauge({ value }) {
-  const percentValue = Math.max(0, Math.min(100, value));
-  const cx = 120;
-  const cy = 112;
-  const radius = 84;
-  const point = (share) => {
-    const angle = Math.PI - Math.min(share, 99.7) / 100 * Math.PI;
-    return [cx + radius * Math.cos(angle), cy - radius * Math.sin(angle)];
-  };
-  const [trackX, trackY] = point(100);
-  const [endX, endY] = point(percentValue);
-  const arc = percentValue
-    ? `M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${endX.toFixed(2)} ${endY.toFixed(2)}`
-    : "";
-  return (
-    <div className="studio-gauge-wrap">
-      <svg className="studio-gauge" viewBox="0 0 240 132" role="img" aria-label={`Paid ${percentValue} percent`}>
-        <path d={`M ${cx - radius} ${cy} A ${radius} ${radius} 0 0 1 ${trackX.toFixed(2)} ${trackY.toFixed(2)}`} fill="none" stroke="#d6e6f5" strokeWidth="22" strokeLinecap="round" />
-        {arc ? <path d={arc} fill="none" stroke="#1565C0" strokeWidth="22" strokeLinecap="round" /> : null}
-      </svg>
-      <strong>{percentValue}%</strong>
-      <span>{t("Paid")}</span>
-    </div>
-  );
-}
-
-function BarGraph({ series }) {
-  const rows = series.length ? series : [{ bucket: "0", label: "", messages: 0 }];
-  const max = Math.max(1, ...rows.map((point) => point.messages));
-  return (
-    <div className="studio-bars-row" aria-label={t("Messages by period")}>
-      {rows.map((point) => {
-        const height = point.messages ? Math.max(8, Math.round((point.messages / max) * 112)) : 0;
-        return (
-          <div className="studio-bar" key={point.bucket} title={`${point.label}: ${point.messages} messages`}>
-            <span>{point.messages || ""}</span>
-            <i style={{ height }} />
-            <em>{point.label}</em>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function cumulativeSeries(series) {
-  let running = 0;
-  return series.map((point) => {
-    running += point.messages;
-    return { ...point, messages: running };
-  });
-}
-
-function Columns({ series }) {
-  const max = Math.max(1, ...series.map((point) => point.messages));
-  return (
-    <div className="columns scroll-columns" aria-label={t("Messages over the selected period")}>
-      {series.map((point) => {
-        const height = point.messages ? Math.max(8, Math.round((point.messages / max) * 150)) : 0;
-        return (
-          <div className="column" key={point.bucket} title={`${point.label}: ${point.messages} messages`}>
-            <span className="column-value">{point.messages || ""}</span>
-            <span className="column-plot">
-              <span className="column-fill" style={{ height: `${height}px` }} />
-            </span>
-            <span className="column-label">{point.label}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ShareRows({ rows }) {
-  const total = rows.reduce((sum, row) => sum + row.value, 0);
-  if (!total) return <p className="muted hint-line"><Icon name="info" /> {t("No share to chart in this filter.")}</p>;
-  return (
-    <div className="share-list">
-      {rows.map((row) => (
-        <div className="share" key={row.id}>
-          <span className="share-name" style={{ color: row.color }}><Icon name={row.icon} /> {row.label}</span>
-          <span className="share-track"><i style={{ width: `${percent(row.value, total)}%`, background: row.color }} /></span>
-          <strong>{percent(row.value, total)}%</strong>
-          <em>{row.value}</em>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 function roleIcon(role) {
   if (role === "teacher") return "graduate";
   if (role === "discipline") return "scale";
   if (role === "school_admin") return "school";
+  if (role === "accountant") return "wallet";
   return "people";
+}
+
+function rwf(value) {
+  return `${new Intl.NumberFormat("en-RW").format(Number(value) || 0)} RWF`;
+}
+
+function sentOn(value) {
+  if (!value) return "";
+  return new Intl.DateTimeFormat("en-GB", { timeZone: "Africa/Kigali", day: "2-digit", month: "short", year: "numeric" }).format(new Date(value));
+}
+
+function fitsClass(account, classId) {
+  const ids = (account.classIds || []).map(String);
+  return !ids.length || ids.includes(String(classId));
+}
+
+function portalFigures(ledger, classes, roster) {
+  const accounts = ledger?.accounts || [];
+  const items = ledger?.items || [];
+  const side = (group) => {
+    const list = accounts.filter((account) => account.group === group);
+    return (classes || []).reduce((total, room) => {
+      const students = (roster || []).filter((student) => String(student.classRoom?._id || student.classRoom || "") === String(room._id));
+      list.filter((account) => fitsClass(account, room._id)).forEach((account) => {
+        const expected = (Number(account.amount) || 0) * students.length;
+        const charges = items.filter((row) => String(row.accountId) === String(account.id) && students.some((student) => String(student._id) === String(row.studentId)));
+        const paid = charges.reduce((sum, row) => sum + (Number(row.amountPaid) || 0), 0);
+        total.due += expected;
+        total.paid += paid;
+        total.unpaid += Math.max(0, expected - paid);
+      });
+      return total;
+    }, { due: 0, paid: 0, unpaid: 0 });
+  };
+  const entries = ledger?.entries || [];
+  return {
+    fees: side("fee"),
+    materials: side("material"),
+    other: entries.filter((entry) => entry.kind === "other_income").reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0),
+    expenses: entries.filter((entry) => entry.kind === "expense").reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0),
+  };
+}
+
+function pair(bag, id) {
+  const row = bag?.[id] || {};
+  return { sent: Number(row.sent) || 0, unsent: Number(row.unsent) || 0 };
+}
+
+function SentChart({ series }) {
+  const max = Math.max(1, ...series.map((point) => point.sent + point.unsent));
+  if (!series.length) return <p className="muted hint-line"><Icon name="info" /> {t("No messages in this filter.")}</p>;
+  return (
+    <div className="sent-chart" role="img" aria-label={t("Messages over time")}>
+      {series.map((point) => (
+        <div className="sent-col" key={point.bucket} title={`${point.label}: ${point.sent} ${t("Sent")}, ${point.unsent} ${t("Unsent")}`}>
+          <span className="sent-col-plot">
+            {point.unsent ? <i className="is-unsent" style={{ height: `${(point.unsent / max) * 100}%` }} /> : null}
+            {point.sent ? <i className="is-sent" style={{ height: `${(point.sent / max) * 100}%` }} /> : null}
+          </span>
+          <em>{point.label}</em>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function MessagesGraphic() {
@@ -240,20 +133,42 @@ export function MessagesGraphic() {
   );
 }
 
-export function MessageAnalytics({ token, role }) {
+export function MessageAnalytics({ token, role, school }) {
   const today = useMemo(kigaliNow, []);
   const [period, setPeriod] = useState("month");
+  const [on, setOn] = useState(today.on);
   const [year, setYear] = useState(today.year);
   const [month, setMonth] = useState(today.month);
-  const [billing, setBilling] = useState("all");
+  const [term, setTerm] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [delivery, setDelivery] = useState("all");
+  const [type, setType] = useState("all");
+  const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
+  const [books, setBooks] = useState(null);
   const [error, setError] = useState("");
+  const [printOpen, setPrintOpen] = useState(false);
   const years = useMemo(() => Array.from({ length: today.year - 2023 }, (_, index) => 2024 + index), [today.year]);
+  const accountant = role === "accountant";
+  const typeOptions = accountant ? ACCOUNTANT_KINDS : CATEGORIES;
 
   useEffect(() => {
     let alive = true;
     setError("");
-    api(`/sms/analytics?period=${period}&billing=${billing}&year=${year}&month=${month}`, { token })
+    const params = new URLSearchParams({
+      period,
+      delivery,
+      type,
+      year: String(year),
+      month: String(month),
+      on,
+      from,
+      to,
+      term: period === "year" ? term : "",
+      q: query.trim(),
+    });
+    api(`/sms/analytics?${params.toString()}`, { token })
       .then((payload) => {
         if (alive) setData(payload);
       })
@@ -263,219 +178,352 @@ export function MessageAnalytics({ token, role }) {
     return () => {
       alive = false;
     };
-  }, [token, period, billing, year, month]);
+  }, [token, period, delivery, type, year, month, on, from, to, term, query]);
 
-  const mine = role !== "school_admin";
-  const totals = data?.totals || { messages: 0, paid: 0, unpaid: 0, shown: 0 };
+  useEffect(() => {
+    if (role !== "accountant") return undefined;
+    let alive = true;
+    Promise.all([
+      api("/accounts/ledger", { token }),
+      api("/academics/classes", { token }),
+      api("/students", { token }),
+    ]).then(([ledger, rooms, students]) => {
+      if (alive) setBooks(portalFigures(ledger, rooms.items || [], students.items || []));
+    }).catch(() => {
+      if (alive) setBooks(null);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [token, role]);
+
+  const totals = data?.totals || { messages: 0, sent: 0, unsent: 0, shown: 0 };
   const series = data?.series || [];
-  const categories = data?.categories || {};
   const people = data?.people || [];
-  const categoryRows = CATEGORIES.map((item) => ({ ...item, value: categories[item.id] || 0 }));
-  const billingRows = [
-    { id: "paid", label: "Paid", value: totals.paid, color: "#1565C0", icon: "check" },
-    { id: "unpaid", label: "Unpaid", value: totals.unpaid, color: "#C47B17", icon: "alert" },
-  ];
-  const peak = series.reduce((best, point) => (point.messages > (best?.messages || 0) ? point : best), null);
-  const periodName = PERIODS.find((item) => item.id === period)?.label || "Month";
-  const heading = period === "year" ? String(year) : period === "month" ? `${t(MONTHS[month - 1])} ${year}` : t(periodName);
+  const recent = data?.recent || [];
+  const mix = typeOptions.map((item) => ({ ...item, ...pair(accountant ? data?.kinds : data?.categories, item.id) }));
+  const mixSent = mix.reduce((sum, item) => sum + item.sent, 0);
+  const mixUnsent = mix.reduce((sum, item) => sum + item.unsent, 0);
+  const rate = percent(totals.sent, totals.sent + totals.unsent);
+  const heading = role === "school_admin" ? t("School messages") : t("Your messages");
 
   return (
-    <div className="msg-dash">
-      <section className="panel dash-intro msg-intro">
-        <header className="assess-head">
-          <span className="assess-mark"><Icon name="message" /></span>
-          <div>
-            <p className="kicker"><Icon name="chart" /> {t("Message analytics")}</p>
-            <h2>{mine ? t("Your messages") : t("School messages")}</h2>
-          </div>
-          <MessagesGraphic />
-        </header>
-        <p className="muted">
-            {mine
-              ? "These are the messages you sent. A director sees the whole school."
-              : "Every teacher, discipline officer and notice from this school."}
-            {" "}Paid means the gateway accepted the message. Unpaid means it was refused and was not billed. Times follow Africa/Kigali.
-        </p>
-        <div className="msg-filters">
-          <label>
-            <span><Icon name="calendar" /> {t("Year")}</span>
-            <select
-              value={year}
-              onChange={(event) => {
-                setYear(Number(event.target.value));
-                if (period === "day" || period === "week") setPeriod("year");
-              }}
-            >
-              {years.map((item) => <option key={item} value={item}>{item}</option>)}
-            </select>
-          </label>
-          <label>
-            <span><Icon name="calendar" /> {t("Month")}</span>
-            <select
-              value={month}
-              onChange={(event) => {
-                setMonth(Number(event.target.value));
-                setPeriod("month");
-              }}
-            >
-              {MONTHS.map((item, index) => <option key={item} value={index + 1}>{item}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="chips">
-          {PERIODS.map((item) => (
-            <button key={item.id} className={period === item.id ? "on" : ""} onClick={() => {
-              setPeriod(item.id);
-              if (item.id === "day" || item.id === "week") {
-                setYear(today.year);
-                setMonth(today.month);
-              }
-            }}>
-              <Icon name={item.icon} /> {t(item.label)}
-            </button>
-          ))}
-        </div>
-        <div className="chips">
-          {BILLING.map((item) => (
-            <button key={item.id} className={billing === item.id ? "on" : ""} onClick={() => setBilling(item.id)}>
-              <Icon name={item.icon} /> {t(item.label)}
-            </button>
-          ))}
+    <div className="msg-dash msg-studio">
+      <section className="panel msg-studio-head">
+        <p className="kicker"><Icon name="chart" /> {t("Message analytics")}</p>
+        <h2>{heading}</h2>
+        <p className="muted">{t("Sent left the school. Unsent stayed here because the gateway refused the message. Times follow Africa/Kigali.")}</p>
+        <div className="actions">
+          <button className="solid" type="button" disabled={!data} onClick={() => setPrintOpen(true)}>{t("Print / Save PDF")}</button>
         </div>
       </section>
 
+      <section className="panel msg-studio-filters">
+        <div className="chips span">
+          {PERIODS.map((item) => (
+            <button key={item.id} type="button" className={period === item.id ? "on" : ""} onClick={() => setPeriod(item.id)}>
+              <Icon name="calendar" /> {t(item.label)}
+            </button>
+          ))}
+        </div>
+        <label className="field">{t("Year")}
+          <select value={year} onChange={(event) => setYear(Number(event.target.value))}>
+            {years.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
+        </label>
+        <label className="field">{t("From")}
+          <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} />
+        </label>
+        <label className="field">{t("To")}
+          <input type="date" value={to} onChange={(event) => setTo(event.target.value)} />
+        </label>
+        {period === "day" || period === "week" ? (
+          <label className="field">{t("Date")}
+            <input type="date" value={on} onChange={(event) => setOn(event.target.value)} />
+          </label>
+        ) : null}
+        {period === "month" ? (
+          <label className="field">{t("Month")}
+            <select value={month} onChange={(event) => setMonth(Number(event.target.value))}>
+              {MONTHS.map((item, index) => <option key={item} value={index + 1}>{t(item)}</option>)}
+            </select>
+          </label>
+        ) : null}
+        {period === "year" ? (
+          <label className="field">{t("Term")}
+            <select value={term} onChange={(event) => setTerm(event.target.value)}>
+              <option value="">{t("Annual")}</option>
+              <option value="1">{t("Term 1")}</option>
+              <option value="2">{t("Term 2")}</option>
+              <option value="3">{t("Term 3")}</option>
+            </select>
+          </label>
+        ) : null}
+        <div className="chips span">
+          {DELIVERY.map((item) => (
+            <button key={item.id} type="button" className={delivery === item.id ? "on" : ""} onClick={() => setDelivery(item.id)}>
+              <Icon name={item.id === "unsent" ? "alert" : item.id === "sent" ? "check" : "message"} /> {t(item.label)}
+            </button>
+          ))}
+        </div>
+        <label className="field">{t("Message type")}
+          <select value={type} onChange={(event) => setType(event.target.value)}>
+            <option value="all">{t("All messages")}</option>
+            {typeOptions.map((item) => <option key={item.id} value={item.id}>{t(item.label)}</option>)}
+          </select>
+        </label>
+        <label className="field span">{t("Find a message")}
+          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("Find a message")} />
+        </label>
+        {period === "year" && term ? <p className="muted span">{t("Term 1 is January to April. Term 2 is May to August. Term 3 is September to December.")}</p> : null}
+      </section>
+
       {error ? <p className="warn hint-line"><Icon name="alert" /> {error}</p> : null}
+
       {!data && !error ? (
-        <div aria-hidden="true">
-          <div className="kpi-grid">
-            {[0, 1, 2, 3].map((item) => (
-              <article key={item} className="kpi skel-card">
-                <i className="skel skel-avatar" />
-                <span className="skel-copy"><i className="skel short" /><i className="skel" /></span>
-              </article>
-            ))}
-          </div>
-          <div className="studio-graphs">
-            {[0, 1, 2, 3].map((item) => <section key={item} className="studio-card"><div className="skel skel-stage" /></section>)}
-          </div>
+        <div className="msg-studio-kpis" aria-hidden="true">
+          {[0, 1, 2, 3].map((item) => <article key={item} className="kpi skel-card"><i className="skel" /></article>)}
         </div>
       ) : null}
 
       {data ? (
         <>
-          <div className="kpi-grid">
+          <div className="msg-studio-kpis">
             <article className="kpi msg-kpi">
-              <span className="assess-mark"><Icon name="filter" /></span>
+              <span className="assess-mark"><Icon name="message" /></span>
               <div>
                 <h2>{totals.shown}</h2>
                 <p>{t("In this filter")}</p>
               </div>
             </article>
             <article className="kpi msg-kpi">
-              <span className="assess-mark"><Icon name="message" /></span>
+              <span className="assess-mark"><Icon name="check" /></span>
               <div>
-                <h2>{totals.messages}</h2>
-                <p>{t("All messages")}</p>
-              </div>
-            </article>
-            <article className="kpi msg-kpi">
-              <span className="assess-mark"><Icon name="wallet" /></span>
-              <div>
-                <h2>{totals.paid}</h2>
-                <p>{t("Paid")}</p>
+                <h2>{totals.sent}</h2>
+                <p>{t("Sent")}</p>
               </div>
             </article>
             <article className="kpi msg-kpi">
               <span className="assess-mark"><Icon name="alert" /></span>
               <div>
-                <h2>{totals.unpaid}</h2>
-                <p>{t("Unpaid")}</p>
+                <h2>{totals.unsent}</h2>
+                <p>{t("Unsent")}</p>
+              </div>
+            </article>
+            <article className="kpi msg-kpi">
+              <span className="assess-mark"><Icon name="chart" /></span>
+              <div>
+                <h2>{rate}%</h2>
+                <p>{t("Sent rate")}</p>
               </div>
             </article>
           </div>
-
-          <div className="studio-graphs">
-            <section className="studio-card">
-              <h3><Icon name="chart" /> {t("Messages graph")}</h3>
-              <AreaGraph series={series} />
-            </section>
-            <section className="studio-card">
-              <h3><Icon name="pie" /> {t("Paid gauge")}</h3>
-              <Gauge value={percent(totals.paid, totals.paid + totals.unpaid)} />
-            </section>
-            <section className="studio-card">
-              <h3><Icon name="chart" /> {t("Running total")}</h3>
-              <AreaGraph series={cumulativeSeries(series)} tone="soft" />
-            </section>
-            <section className="studio-card">
-              <h3><Icon name="chart" /> {t("Messages line")}</h3>
-              <LineGraph series={series} />
-            </section>
-            <section className="studio-card studio-bars">
-              <h3><Icon name="chart" /> Messages by {period === "day" ? "hour" : period === "year" ? "month" : "day"}</h3>
-              <BarGraph series={series} />
-              <p className="studio-legend"><i /> {t("Messages")}</p>
-            </section>
+          <div className="sent-rate">
+            <span>{t("Sent rate")}</span>
+            <div><i style={{ width: `${rate}%` }} /></div>
+            <strong>{totals.sent} / {totals.sent + totals.unsent}</strong>
           </div>
 
-          <div className="analytics">
-            <section className="chart-card">
-              <h2 className="card-title"><Icon name="chart" /> {heading}</h2>
-              <p className="muted">Column chart for {heading}. Each column is one {period === "day" ? "hour" : period === "year" ? "month" : "day"}.</p>
-              {series.some((point) => point.messages) ? <Columns series={series} /> : <p className="muted hint-line"><Icon name="info" /> {t("No messages in this filter.")}</p>}
-              {peak?.messages ? (
-                <div className="insight-row">
-                  <span><Icon name="bolt" /> Peak {peak.label}</span>
-                  <strong>{peak.messages}</strong>
-                  <span><Icon name="target" /> Average {series.length ? Math.round(totals.shown / series.length) : 0} per column</span>
-                </div>
-              ) : null}
-            </section>
-            <section className="chart-card">
-              <h2 className="card-title"><Icon name="pie" /> {t("Paid and unpaid")}</h2>
-              <div className="pie-wrap pie-stack">
-                <PieChart slices={billingRows} hole label="Paid and unpaid pie" />
-                <ShareRows rows={billingRows} />
-              </div>
-            </section>
-          </div>
+          <section className="chart-card">
+            <h2 className="card-title"><Icon name="chart" /> {t("Messages over time")}</h2>
+            <SentChart series={series} />
+            <p className="msg-legend"><span><i className="is-sent" /> {t("Sent")}</span><span><i className="is-unsent" /> {t("Unsent")}</span></p>
+          </section>
 
-          <div className="analytics">
+          <section className="chart-card">
+            <table className="doc-table fee-paper">
+              <caption>{t("Message type")}</caption>
+              <thead>
+                <tr>
+                  <th>{t("Message type")}</th>
+                  <th className="num">{t("Sent")}</th>
+                  <th className="num">{t("Unsent")}</th>
+                  <th className="num">{t("Total")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className={type === "all" ? "is-on" : ""}>
+                  <td><button className="ghost" type="button" onClick={() => setType("all")}>{t("All messages")}</button></td>
+                  <td className="num">{mixSent}</td>
+                  <td className="num">{mixUnsent}</td>
+                  <td className="num">{mixSent + mixUnsent}</td>
+                </tr>
+                {mix.map((item) => (
+                  <tr key={item.id} className={type === item.id ? "is-on" : ""}>
+                    <td><button className="ghost" type="button" onClick={() => setType(item.id)}><Icon name={item.icon} /> {t(item.label)}</button></td>
+                    <td className="num">{item.sent}</td>
+                    <td className="num">{item.unsent}</td>
+                    <td className="num">{item.sent + item.unsent}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+
+          {role === "school_admin" ? (
             <section className="chart-card">
-              <h2 className="card-title"><Icon name="pie" /> {t("Categories")}</h2>
-              <div className="pie-wrap pie-stack">
-                <PieChart slices={categoryRows} label="Category pie" />
-                <div className="legend">
-                  {categoryRows.map((item) => (
-                    <span key={item.id} style={{ color: item.color }}><i style={{ background: item.color }} /> <Icon name={item.icon} /> {t(item.label)} · {item.value}</span>
+              <table className="doc-table fee-paper">
+                <caption>{t("Who sent them")}</caption>
+                <thead>
+                  <tr>
+                    <th>{t("Staff")}</th>
+                    <th className="num">{t("Sent")}</th>
+                    <th className="num">{t("Unsent")}</th>
+                    <th className="num">{t("Total")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {people.map((person) => (
+                    <tr key={person.id || person.name}>
+                      <td><Icon name={roleIcon(person.role)} /> {person.name === "Earlier sends" ? t("Earlier sends") : person.name}</td>
+                      <td className="num">{person.sent || 0}</td>
+                      <td className="num">{person.unsent || 0}</td>
+                      <td className="num">{person.messages || 0}</td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-            </section>
-            <section className="chart-card">
-              <h2 className="card-title"><Icon name="target" /> {t("Share of messages")}</h2>
-              <ShareRows rows={categoryRows} />
-            </section>
-          </div>
-
-          {!mine ? (
-            <section className="chart-card">
-              <h2 className="card-title"><Icon name="people" /> {t("Who sent them")}</h2>
-              {people.length ? people.map((person) => (
-                <div className="school-bar" key={person.id || person.name}>
-                  <div className="school-bar-head">
-                    <strong><Icon name={roleIcon(person.role)} /> {person.name}</strong>
-                    <span>{person.messages}</span>
-                  </div>
-                  <div className="stack" aria-label={`${person.name}: ${person.paid} paid, ${person.unpaid} unpaid`}>
-                    <i style={{ flexGrow: person.paid || 0, background: "#1565C0", display: person.paid ? "block" : "none" }} />
-                    <i style={{ flexGrow: person.unpaid || 0, background: "#C47B17", display: person.unpaid ? "block" : "none" }} />
-                  </div>
-                </div>
-              )) : <p className="muted hint-line"><Icon name="people" /> {t("No staff messages in this filter.")}</p>}
+                </tbody>
+              </table>
+              {people.length ? null : <p className="muted hint-line"><Icon name="people" /> {t("No staff messages in this filter.")}</p>}
             </section>
           ) : null}
+
+          {accountant && books ? (
+            <section className="chart-card">
+              <table className="doc-table fee-paper">
+                <caption>{t("Accountant portal")}</caption>
+                <thead>
+                  <tr>
+                    <th>{t("Account")}</th>
+                    <th className="num">{t("Amount to be paid")}</th>
+                    <th className="num">{t("Amount paid")}</th>
+                    <th className="num">{t("Unpaid")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t("School fees")}</td>
+                    <td className="num">{rwf(books.fees.due)}</td>
+                    <td className="num">{rwf(books.fees.paid)}</td>
+                    <td className="num">{rwf(books.fees.unpaid)}</td>
+                  </tr>
+                  <tr>
+                    <td>{t("Other items")}</td>
+                    <td className="num">{rwf(books.materials.due)}</td>
+                    <td className="num">{rwf(books.materials.paid)}</td>
+                    <td className="num">{rwf(books.materials.unpaid)}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td>{t("School")}</td>
+                    <td className="num">{rwf(books.fees.due + books.materials.due)}</td>
+                    <td className="num">{rwf(books.fees.paid + books.materials.paid)}</td>
+                    <td className="num">{rwf(books.fees.unpaid + books.materials.unpaid)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+              <table className="doc-table fee-paper">
+                <caption>{t("Another income")}</caption>
+                <thead>
+                  <tr>
+                    <th>{t("Account")}</th>
+                    <th className="num">{t("Amount")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t("Another income")}</td>
+                    <td className="num">{rwf(books.other)}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <table className="doc-table fee-paper">
+                <caption>{t("Expenses")}</caption>
+                <thead>
+                  <tr>
+                    <th>{t("Account")}</th>
+                    <th className="num">{t("Amount")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{t("Expenses")}</td>
+                    <td className="num">{rwf(books.expenses)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+          ) : null}
+
+          <section className="chart-card">
+            <table className="doc-table fee-paper">
+              <caption>{t("My messages")}</caption>
+              <thead>
+                <tr>
+                  <th>{t("Date")}</th>
+                  <th>{t("The message")}</th>
+                  <th className="num">{t("Parents")}</th>
+                  <th>{t("Sent or unsent")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recent.map((item) => (
+                  <tr key={item.id}>
+                    <td>{sentOn(item.createdAt)}</td>
+                    <td>{item.message}</td>
+                    <td className="num">{item.recipients}</td>
+                    <td><span className={item.state === "unsent" ? "msg-state is-unsent" : "msg-state is-sent"}>{t(item.state === "unsent" ? "Unsent" : "Sent")}</span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {recent.length ? null : <p className="muted hint-line"><Icon name="info" /> {t("No messages in this filter.")}</p>}
+          </section>
         </>
+      ) : null}
+      {printOpen && data ? (
+        <ReportPrint school={school} title={heading} note={t("Sent left the school. Unsent stayed here because the gateway refused the message. Times follow Africa/Kigali.")} onClose={() => setPrintOpen(false)}>
+          <table className="doc-table">
+            <thead>
+              <tr>
+                <th>{t("Message type")}</th>
+                <th>{t("Sent")}</th>
+                <th>{t("Unsent")}</th>
+                <th>{t("Total")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {mix.map((item) => (
+                <tr key={item.id}>
+                  <td>{t(item.label)}</td>
+                  <td className="num">{item.sent}</td>
+                  <td className="num">{item.unsent}</td>
+                  <td className="num">{item.sent + item.unsent}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <table className="doc-table">
+            <thead>
+              <tr>
+                <th>{t("Date")}</th>
+                <th>{t("The message")}</th>
+                <th>{t("Parents")}</th>
+                <th>{t("Sent or unsent")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recent.map((item) => (
+                <tr key={item.id}>
+                  <td>{sentOn(item.createdAt)}</td>
+                  <td>{item.message}</td>
+                  <td className="num">{item.recipients}</td>
+                  <td>{t(item.state === "unsent" ? "Unsent" : "Sent")}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </ReportPrint>
       ) : null}
     </div>
   );

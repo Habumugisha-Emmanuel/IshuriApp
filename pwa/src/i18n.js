@@ -77,6 +77,8 @@ function pattern(source) {
   if (match) return use(Number(match[1]) === 1 ? "Message Wallet: {count} message left." : "Message Wallet: {count} messages left.", { count: match[1] });
   match = source.match(/^(.+) must begin with 250, for example 250788000000\.$/);
   if (match) return use("{label} must begin with 250, for example 250788000000.", { label: lookup(match[1]) });
+  match = source.match(/^(.+) must be 10 digits and start with 07\.$/);
+  if (match) return use("{label} must be 10 digits and start with 07.", { label: lookup(match[1]) });
   match = source.match(/^(.+) is not a subject of (.+)$/);
   if (match) return use("{subject} is not a subject of {class}.", { subject: match[1], class: match[2] });
   match = source.match(/^(\d+) online$/);

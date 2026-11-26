@@ -7,6 +7,8 @@ const markSchema = new mongoose.Schema(
     student: { type: mongoose.Schema.Types.ObjectId, ref: "Student", required: true },
     score: { type: Number, required: true },
     comment: String,
+    attended: { type: Boolean, default: true },
+    absenceReason: { type: String, trim: true, default: "" },
     notifiedAt: Date,
   },
   { timestamps: true }

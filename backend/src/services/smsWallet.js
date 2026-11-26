@@ -2,7 +2,7 @@ const env = require("../config/env");
 const ApiError = require("../utils/ApiError");
 const { School, SmsLedger, PlatformWallet, MessagePayment } = require("../models");
 const dsc = require("./dscSms");
-const { countSmsParts, toRwandaMsisdn } = require("../utils/phone");
+const { countSmsParts, toRwandaMsisdn, fitSms } = require("../utils/phone");
 
 async function buyWholesale({ credits, createdBy, note }) {
   const qty = Number(credits);
@@ -201,11 +201,13 @@ async function recordSend({ school, createdBy, category, billing, recipients, pa
 }
 
 async function sendFromSchool({ school, phones, message, createdBy, category = "notice" }) {
+  const text = fitSms(message);
+  if (!text) throw new ApiError(400, "Write the message first.");
   const kind = ["marks", "results", "discipline", "notice"].includes(category) ? category : "notice";
   const needed = recipientCount(phones);
   const hold = needed ? await holdMessages(school._id, needed) : { held: false, remaining: 0 };
   try {
-    const result = await dsc.sendSms({ phones, message });
+    const result = await dsc.sendSms({ phones, message: text });
     const used = result.simulated ? 0 : result.recipients.length;
     if (hold.held && needed > used) await releaseMessages(school._id, needed - used);
     await recordSend({
@@ -215,7 +217,7 @@ async function sendFromSchool({ school, phones, message, createdBy, category = "
       billing: result.simulated ? "unpaid" : "paid",
       recipients: result.recipients.length,
       parts: result.parts,
-      message,
+      message: text,
       gatewayMessageId: result.message_id,
     });
     const fresh = await School.findById(school._id).select("messagesRemaining messagesGranted");
@@ -237,8 +239,8 @@ async function sendFromSchool({ school, phones, message, createdBy, category = "
         category: kind,
         billing: "unpaid",
         recipients,
-        parts: recipients * countSmsParts(message),
-        message,
+        parts: recipients * countSmsParts(text),
+        message: text,
         note: err.message,
       });
     } catch (writeErr) {

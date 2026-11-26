@@ -1,22 +1,30 @@
+function digitsOf(raw) {
+  return String(raw || "").replace(/\D/g, "");
+}
+
+function localPhone(raw) {
+  const digits = digitsOf(raw);
+  if (/^07\d{8}$/.test(digits)) return digits;
+  if (/^2507\d{8}$/.test(digits)) return `0${digits.slice(3)}`;
+  return null;
+}
+
 function toRwandaMsisdn(raw) {
-  if (!raw) return null;
-  let digits = String(raw).replace(/\D/g, "");
-  if (!digits) return null;
-  if (digits.startsWith("00")) digits = digits.slice(2);
-  if (digits.startsWith("2500") && digits.length === 13) digits = `250${digits.slice(4)}`;
-  let national = "";
-  if (digits.startsWith("250") && digits.length === 12) national = digits.slice(3);
-  else if (digits.startsWith("0") && digits.length === 10) national = digits.slice(1);
-  else if (digits.length === 9) national = digits;
-  else return null;
-  if (!/^\d{9}$/.test(national)) return null;
-  const msisdn = `250${national}`;
-  return /^250\d{9}$/.test(msisdn) ? msisdn : null;
+  const local = localPhone(raw);
+  if (!local) return null;
+  const msisdn = `250${local.slice(1)}`;
+  return /^2507\d{8}$/.test(msisdn) ? msisdn : null;
 }
 
 function optionalMsisdn(raw) {
   if (raw === undefined || raw === null || String(raw).trim() === "") return "";
-  return toRwandaMsisdn(raw);
+  return localPhone(raw);
+}
+
+function fitSms(value, limit = 160) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (text.length <= limit) return text;
+  return text.slice(0, limit).trimEnd();
 }
 
 function countSmsParts(message) {
@@ -33,4 +41,4 @@ function countSmsParts(message) {
   return Math.ceil(text.length / 67);
 }
 
-module.exports = { toRwandaMsisdn, optionalMsisdn, countSmsParts };
+module.exports = { digitsOf, localPhone, toRwandaMsisdn, optionalMsisdn, countSmsParts, fitSms };

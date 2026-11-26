@@ -2,14 +2,14 @@ const express = require("express");
 const slugify = require("slugify");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
-const { User, School, Student } = require("../models");
+const { User, School, Student, Staff } = require("../models");
 const { signToken, authRequired } = require("../middleware/auth");
 const { optionalMsisdn } = require("../utils/phone");
 
 function storedPhone(raw, label) {
   if (raw === undefined || raw === null || String(raw).trim() === "") return "";
   const phone = optionalMsisdn(raw);
-  if (!phone) throw new ApiError(400, `${label} must begin with 250, for example 250788000000.`);
+  if (!phone) throw new ApiError(400, `${label} must be 10 digits and start with 07.`);
   return phone;
 }
 
@@ -147,12 +147,62 @@ router.patch(
   "/me",
   authRequired,
   asyncHandler(async (req, res) => {
-    const allowed = ["fullName", "phone", "bio", "title", "gender", "socials", "avatarUrl"];
-    allowed.forEach((key) => {
-      if (req.body[key] === undefined) return;
-      req.user[key] = key === "phone" ? storedPhone(req.body.phone, "Phone") : req.body[key];
-    });
+    if (req.body.fullName !== undefined) {
+      const fullName = String(req.body.fullName || "").trim();
+      if (!fullName) throw new ApiError(400, "Type your full name.");
+      req.user.fullName = fullName;
+    }
+    if (req.body.phone !== undefined) req.user.phone = storedPhone(req.body.phone, "Phone");
+    if (req.body.bio !== undefined) req.user.bio = String(req.body.bio || "").trim().slice(0, 500);
+    if (req.body.title !== undefined) req.user.title = String(req.body.title || "").trim().slice(0, 80);
+    if (req.body.gender !== undefined) {
+      const gender = String(req.body.gender || "");
+      if (!["", "male", "female", "other"].includes(gender)) throw new ApiError(400, "Choose a gender.");
+      req.user.gender = gender;
+    }
+    if (req.body.avatarUrl !== undefined) {
+      const avatarUrl = String(req.body.avatarUrl || "").trim();
+      if (avatarUrl && !/^https:\/\//.test(avatarUrl)) throw new ApiError(400, "The profile photo could not be saved.");
+      req.user.avatarUrl = avatarUrl;
+    }
+    if (req.body.socials && typeof req.body.socials === "object") {
+      const current = req.user.socials?.toObject ? req.user.socials.toObject() : { ...(req.user.socials || {}) };
+      delete current._id;
+      ["facebook", "twitter", "instagram", "linkedin", "website"].forEach((key) => {
+        if (req.body.socials[key] === undefined) return;
+        current[key] = String(req.body.socials[key] || "").trim().slice(0, 200);
+      });
+      if (req.body.socials.whatsapp !== undefined) current.whatsapp = storedPhone(req.body.socials.whatsapp, "WhatsApp");
+      req.user.socials = current;
+    }
+    if (req.body.email !== undefined) {
+      const email = String(req.body.email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ApiError(400, "Type a valid email.");
+      const taken = await User.findOne({ email, _id: { $ne: req.user._id } });
+      if (taken) throw new ApiError(409, "Email already in use");
+      req.user.email = email;
+    }
+    if (req.body.newPassword || req.body.confirmPassword || req.body.currentPassword) {
+      const next = String(req.body.newPassword || "");
+      if (next.length < 8) throw new ApiError(400, "The new password needs at least 8 characters.");
+      if (next !== String(req.body.confirmPassword || "")) throw new ApiError(400, "The new passwords do not match.");
+      if (!(await req.user.comparePassword(String(req.body.currentPassword || "")))) {
+        throw new ApiError(400, "The current password is not correct.");
+      }
+      req.user.passwordHash = await User.hashPassword(next);
+    }
     await req.user.save();
+    const staff = await Staff.findOne({ user: req.user._id });
+    if (staff) {
+      staff.fullName = req.user.fullName;
+      staff.email = req.user.email;
+      staff.phone = req.user.phone || "";
+      staff.bio = req.user.bio || "";
+      staff.photoUrl = req.user.avatarUrl || "";
+      staff.whatsapp = req.user.socials?.whatsapp || req.user.phone || "";
+      if (req.user.title) staff.roleTitle = req.user.title;
+      await staff.save();
+    }
     res.json({ success: true, user: req.user.toSafeJSON() });
   })
 );

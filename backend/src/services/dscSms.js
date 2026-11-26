@@ -29,7 +29,7 @@ async function sendSms({ phones, message }) {
   const text = String(message || "").trim();
   if (!text) throw new ApiError(400, "Write the message first");
   if (!recipients.length) {
-    throw new ApiError(400, "No valid phone numbers. Every number must begin with 250, for example 250788000000");
+    throw new ApiError(400, "No valid phone numbers. Every number must be 10 digits and start with 07.");
   }
 
   const parts = countSmsParts(text);

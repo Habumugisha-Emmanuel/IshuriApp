@@ -19,7 +19,19 @@ const {
   PlatformWallet,
   PlatformAd,
   Follow,
+  FeeAccount,
+  StudentCharge,
+  CashEntry,
+  Vendor,
+  Bill,
+  Estimate,
+  PurchaseOrder,
+  BudgetLine,
+  RecurringRule,
+  BankMark,
 } = require("../models");
+const { seedClassBooks } = require("./seedBooks");
+const { seedMissingMarks } = require("./seedMarks");
 
 async function upsertUser(data) {
   const existing = await User.findOne({ email: data.email });
@@ -46,6 +58,16 @@ async function run() {
     SubscriptionPlan.deleteMany({}),
     PlatformAd.deleteMany({}),
     Follow.deleteMany({}),
+    FeeAccount.deleteMany({}),
+    StudentCharge.deleteMany({}),
+    CashEntry.deleteMany({}),
+    Vendor.deleteMany({}),
+    Bill.deleteMany({}),
+    Estimate.deleteMany({}),
+    PurchaseOrder.deleteMany({}),
+    BudgetLine.deleteMany({}),
+    RecurringRule.deleteMany({}),
+    BankMark.deleteMany({}),
   ]);
 
   const admin = await upsertUser({
@@ -168,9 +190,23 @@ async function run() {
     title: "Discipline Master",
     password: "Discipline@123",
   });
-  const maths = await Subject.create({ school: school._id, name: "Mathematics", code: "MATH" });
-  const physics = await Subject.create({ school: school._id, name: "Physics", code: "PHY" });
-  const english = await Subject.create({ school: school._id, name: "English", code: "ENG" });
+  const dosUser = await upsertUser({
+    fullName: "Diane Mukamana",
+    email: "dos@gsnyarugenge.rw",
+    phone: "250788100030",
+    role: "dos",
+    school: school._id,
+    title: "Director of Studies",
+    password: "Studies@123",
+  });
+  const maths = await Subject.create({ school: school._id, name: "Mathematics", code: "MATH", credits: 6 });
+  const physics = await Subject.create({ school: school._id, name: "Physics", code: "PHY", credits: 5 });
+  const english = await Subject.create({ school: school._id, name: "English", code: "ENG", credits: 4 });
+  const chemistry = await Subject.create({ school: school._id, name: "Chemistry", code: "CHE", credits: 6 });
+  const biology = await Subject.create({ school: school._id, name: "Biology", code: "BIO", credits: 4 });
+  const kinyarwanda = await Subject.create({ school: school._id, name: "Kinyarwanda", code: "KIN", credits: 3 });
+  const entrepreneurship = await Subject.create({ school: school._id, name: "Entrepreneurship", code: "ENT", credits: 3 });
+  const computer = await Subject.create({ school: school._id, name: "Computer Science", code: "ICT", credits: 4 });
 
   const teacherStaff = await Staff.create({
     school: school._id,
@@ -210,6 +246,17 @@ async function run() {
     whatsapp: director.phone,
     visibility: "public",
   });
+  await Staff.create({
+    school: school._id,
+    user: dosUser._id,
+    fullName: dosUser.fullName,
+    roleTitle: "Director of Studies",
+    category: "dos",
+    email: dosUser.email,
+    phone: dosUser.phone,
+    whatsapp: dosUser.phone,
+    visibility: "public",
+  });
 
   const s6pcm = await ClassRoom.create({
     school: school._id,
@@ -221,6 +268,12 @@ async function run() {
     subjects: [
       { subject: maths._id, teacher: teacherStaff._id },
       { subject: physics._id, teacher: teacherStaff._id },
+      { subject: english._id, teacher: teacherStaff._id },
+      { subject: chemistry._id, teacher: teacherStaff._id },
+      { subject: biology._id, teacher: teacherStaff._id },
+      { subject: kinyarwanda._id, teacher: teacherStaff._id },
+      { subject: entrepreneurship._id, teacher: teacherStaff._id },
+      { subject: computer._id, teacher: teacherStaff._id },
     ],
   });
 
@@ -269,6 +322,46 @@ async function run() {
     score: 78,
     comment: "Strong algebra, needs more practice on trigonometry.",
   });
+  await Assessment.create({
+    school: school._id,
+    classRoom: s6pcm._id,
+    subject: maths._id,
+    teacher: teacherStaff._id,
+    title: "Quiz",
+    type: "quiz",
+    term: "1",
+    academicYear: "2026",
+    maxScore: 30,
+    date: new Date("2026-09-18T12:00:00.000Z"),
+  });
+  await Assessment.create({
+    school: school._id,
+    classRoom: s6pcm._id,
+    subject: maths._id,
+    teacher: teacherStaff._id,
+    title: "Exercise",
+    type: "assignment",
+    term: "1",
+    academicYear: "2026",
+    maxScore: 50,
+    date: new Date("2026-10-02T12:00:00.000Z"),
+  });
+  for (const subject of [maths, physics, english, chemistry, biology, kinyarwanda, entrepreneurship, computer]) {
+    await Assessment.create({
+      school: school._id,
+      classRoom: s6pcm._id,
+      subject: subject._id,
+      teacher: teacherStaff._id,
+      title: "Examination",
+      type: "exam",
+      term: "1",
+      academicYear: "2026",
+      maxScore: 100,
+      date: new Date("2026-11-12T12:00:00.000Z"),
+    });
+  }
+  await seedClassBooks({ school, classRoom: s6pcm, actorId: director._id });
+  await seedMissingMarks({ schoolId: school._id });
 
   await Event.create({
     school: school._id,
@@ -412,6 +505,7 @@ async function run() {
   console.log("School admin: director@gsnyarugenge.rw / School@123");
   console.log("Teacher: maths@gsnyarugenge.rw / Teacher@123");
   console.log("Discipline: discipline@gsnyarugenge.rw / Discipline@123");
+  console.log("Accountant: accountant@gsnyarugenge.rw / Accountant@123");
   console.log("University admin: admin@ur.ac.rw / University@123");
   process.exit(0);
 }

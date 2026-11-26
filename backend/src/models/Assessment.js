@@ -9,7 +9,7 @@ const assessmentSchema = new mongoose.Schema(
     title: { type: String, required: true },
     type: {
       type: String,
-      enum: ["quiz", "test", "exam", "assignment", "periodic", "national"],
+      enum: ["quiz", "test", "exam", "assignment", "periodic", "national", "midterm"],
       default: "test",
     },
     term: { type: String, enum: ["1", "2", "3", "annual"], default: "1" },
@@ -17,6 +17,13 @@ const assessmentSchema = new mongoose.Schema(
     maxScore: { type: Number, default: 100 },
     date: { type: Date, default: Date.now },
     comment: String,
+    ranges: [
+      {
+        from: { type: Number, required: true },
+        to: { type: Number, required: true },
+        comment: { type: String, trim: true, default: "" },
+      },
+    ],
     parentsNotifiedAt: Date,
   },
   { timestamps: true }

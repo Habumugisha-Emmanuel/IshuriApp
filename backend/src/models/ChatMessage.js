@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 const chatMessageSchema = new mongoose.Schema(
   {
     thread: { type: mongoose.Schema.Types.ObjectId, ref: "ChatThread", required: true },
-    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    guestName: { type: String, default: "" },
+    guestStudent: { type: mongoose.Schema.Types.ObjectId, ref: "Student" },
     body: { type: String, default: "", maxlength: 2000 },
     kind: { type: String, enum: ["text", "like"], default: "text" },
     replyTo: { type: mongoose.Schema.Types.ObjectId, ref: "ChatMessage" },

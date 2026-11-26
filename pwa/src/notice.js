@@ -2,6 +2,7 @@ import { t } from "./i18n.js";
 
 const listeners = new Set();
 let busyCount = 0;
+let hideTimer = 0;
 
 function emit(item) {
   listeners.forEach((listener) => listener(item));
@@ -13,10 +14,14 @@ export function notify(title, body, tone = "ok") {
 
 export function track(promise) {
   busyCount += 1;
+  window.clearTimeout(hideTimer);
   emit({ kind: "busy", busy: true });
   return Promise.resolve(promise).finally(() => {
     busyCount = Math.max(0, busyCount - 1);
-    emit({ kind: "busy", busy: busyCount > 0 });
+    if (busyCount > 0) return;
+    hideTimer = window.setTimeout(() => {
+      if (busyCount === 0) emit({ kind: "busy", busy: false });
+    }, 120);
   });
 }
 

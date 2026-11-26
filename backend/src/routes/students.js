@@ -3,7 +3,7 @@ const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
 const { Student, ClassRoom, User, School } = require("../models");
 const { authRequired, requireRoles, requireSchoolScope } = require("../middleware/auth");
-const { toRwandaMsisdn } = require("../utils/phone");
+const { localPhone } = require("../utils/phone");
 const { assignedClassIds } = require("../utils/teacherClasses");
 
 const router = express.Router();
@@ -15,6 +15,32 @@ async function assertClassAccess(user, classRoomId) {
   if (!classRoomId || !allowed.some((id) => id.toString() === String(classRoomId))) {
     throw new ApiError(403, "You can only manage students in a class assigned to you");
   }
+}
+
+function codePrefix(school, codes) {
+  for (const code of codes) {
+    const match = String(code || "").match(/^([A-Za-z]+)-\d{4}-\d+$/);
+    if (match) return match[1].toUpperCase();
+  }
+  const letters = String(school.name || "School").split(/[^A-Za-z]+/).filter(Boolean).map((word) => word[0]).join("").toUpperCase();
+  return (letters || "STU").slice(0, 4);
+}
+
+async function nextStudentCode(school) {
+  const year = new Date().getFullYear();
+  const codes = (await Student.find({ school: school._id }).select("studentCode")).map((row) => String(row.studentCode || ""));
+  const prefix = codePrefix(school, codes);
+  const pattern = new RegExp(`^${prefix}-${year}-(\\d+)$`, "i");
+  let highest = 0;
+  codes.forEach((code) => {
+    const match = code.match(pattern);
+    if (match) highest = Math.max(highest, Number(match[1]));
+  });
+  for (let step = 1; step <= 1000; step += 1) {
+    const studentCode = `${prefix}-${year}-${String(highest + step).padStart(3, "0")}`;
+    if (!codes.some((code) => code.toUpperCase() === studentCode.toUpperCase())) return studentCode;
+  }
+  return `${prefix}-${year}-${Date.now()}`;
 }
 
 router.get(
@@ -45,10 +71,9 @@ router.post(
     const school = await School.findById(req.user.school);
     if (!school.hasMarksSystem()) throw new ApiError(400, "Universities do not register class students here");
     const fullName = String(req.body.fullName || "").trim();
-    const studentCode = String(req.body.studentCode || "").trim();
     const classRoom = String(req.body.classRoom || "").trim();
     const { gender, dateOfBirth, address, guardians = [] } = req.body;
-    if (!fullName || !studentCode) throw new ApiError(400, "Student name and code are required");
+    if (!fullName) throw new ApiError(400, "Type a student name");
     if (!classRoom) throw new ApiError(400, "Choose a class before registering the student");
     const phoneGuardian = guardians.find((g) => g && String(g.phone || "").trim());
     if (!phoneGuardian) throw new ApiError(400, "Enter the parent phone. That number receives the messages.");
@@ -58,8 +83,8 @@ router.post(
     if (allowed && !allowed.some((id) => id.toString() === String(classRoom))) {
       throw new ApiError(403, "You can only register students in a class assigned to you");
     }
-    const phone = toRwandaMsisdn(phoneGuardian.phone);
-    if (!phone) throw new ApiError(400, "The parent phone must begin with 250, for example 250727022525.");
+    const phone = localPhone(phoneGuardian.phone);
+    if (!phone) throw new ApiError(400, "The phone number must be 10 digits and start with 07.");
     const normalizedGuardians = [
       {
         relation: ["father", "mother", "guardian"].includes(phoneGuardian.relation) ? phoneGuardian.relation : "guardian",
@@ -68,17 +93,25 @@ router.post(
         isPrimary: true,
       },
     ];
-    const student = await Student.create({
-      school: req.user.school,
-      studentCode,
-      fullName,
-      gender: gender || undefined,
-      dateOfBirth,
-      address,
-      classRoom,
-      guardians: normalizedGuardians,
-      registeredBy: req.user._id,
-    });
+    let student;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      try {
+        student = await Student.create({
+          school: req.user.school,
+          studentCode: await nextStudentCode(school),
+          fullName,
+          gender: gender || undefined,
+          dateOfBirth,
+          address,
+          classRoom,
+          guardians: normalizedGuardians,
+          registeredBy: req.user._id,
+        });
+        break;
+      } catch (error) {
+        if (error?.code !== 11000 || attempt === 4) throw error;
+      }
+    }
     res.status(201).json({ success: true, student });
   })
 );
@@ -91,8 +124,8 @@ router.patch(
     if (!student) throw new ApiError(404, "Student not found");
     await assertClassAccess(req.user, student.classRoom);
     const fullName = req.body.fullName !== undefined ? String(req.body.fullName || "").trim() : student.fullName;
-    const studentCode = req.body.studentCode !== undefined ? String(req.body.studentCode || "").trim() : student.studentCode;
-    if (!fullName || !studentCode) throw new ApiError(400, "Student name and code are required");
+    if (!fullName) throw new ApiError(400, "Type a student name");
+    if (!student.studentCode) student.studentCode = await nextStudentCode(await School.findById(req.user.school));
     if (req.body.classRoom) {
       const klass = await ClassRoom.findOne({ _id: req.body.classRoom, school: req.user.school });
       if (!klass) throw new ApiError(400, "Class does not belong to this school");
@@ -100,12 +133,11 @@ router.patch(
       student.classRoom = req.body.classRoom;
     }
     student.fullName = fullName;
-    student.studentCode = studentCode;
     if (req.body.guardians) {
       const phoneGuardian = req.body.guardians.find((g) => g && String(g.phone || "").trim());
       if (!phoneGuardian) throw new ApiError(400, "Enter the parent phone. That number receives the messages.");
-      const phone = toRwandaMsisdn(phoneGuardian.phone);
-      if (!phone) throw new ApiError(400, "The parent phone must begin with 250, for example 250727022525.");
+      const phone = localPhone(phoneGuardian.phone);
+      if (!phone) throw new ApiError(400, "The phone number must be 10 digits and start with 07.");
       student.guardians = [
         {
           relation: ["father", "mother", "guardian"].includes(phoneGuardian.relation) ? phoneGuardian.relation : "guardian",

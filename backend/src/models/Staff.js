@@ -8,7 +8,7 @@ const staffSchema = new mongoose.Schema(
     roleTitle: { type: String, required: true },
     category: {
       type: String,
-      enum: ["teacher", "admin", "discipline", "accountant", "support", "leadership"],
+      enum: ["teacher", "admin", "discipline", "accountant", "support", "leadership", "dos"],
       default: "teacher",
     },
     department: String,

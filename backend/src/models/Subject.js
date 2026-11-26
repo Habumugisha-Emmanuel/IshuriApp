@@ -5,6 +5,7 @@ const subjectSchema = new mongoose.Schema(
     school: { type: mongoose.Schema.Types.ObjectId, ref: "School", required: true },
     name: { type: String, required: true, trim: true },
     code: { type: String, trim: true, uppercase: true },
+    credits: { type: Number, min: 1, max: 40 },
     level: String,
     description: String,
     isActive: { type: Boolean, default: true },

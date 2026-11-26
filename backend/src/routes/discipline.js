@@ -1,13 +1,22 @@
 const express = require("express");
 const asyncHandler = require("../utils/asyncHandler");
 const ApiError = require("../utils/ApiError");
-const { DisciplineCase, DisciplineTerm, DisciplineScore, Student, School } = require("../models");
+const { DisciplineCase, DisciplineTerm, DisciplineScore, DisciplinePhrase, Student, School } = require("../models");
 const { authRequired, requireRoles, requireSchoolScope } = require("../middleware/auth");
 const smsWallet = require("../services/smsWallet");
 const { schoolBrief, termAliases, yearsIn, kigaliYear } = require("../utils/schoolBrief");
+const { fitSms } = require("../utils/phone");
 
 const router = express.Router();
 router.use(authRequired, requireSchoolScope, requireRoles("discipline", "school_admin"));
+
+const SMS_LIMIT = 160;
+
+function clipSms(value) {
+  const text = String(value || "").trim();
+  if (text.length > SMS_LIMIT) throw new ApiError(400, "Keep the message under 160 characters.");
+  return text;
+}
 
 function bandOf(score, term) {
   if (!term) return "at_risk";
@@ -18,7 +27,11 @@ function bandOf(score, term) {
 }
 
 function disciplineParentMessage({ school, student, title, marksLost, scoreAfter, maxMarks }) {
-  return `Mwiriwe neza Bubyeyi dufatanije kurera, turabamenyesha ko umwana wanyu ${student}, wiga mu ishuri rya ${school}, yagaragaje imyitwarire itari myiza: ${title}. Akaba akuwemo amanota ${marksLost} y'imyitwarire nk'igihano kigenwa n'urwego rushinzwe imyitwarire mukigo cy'ishuri, asigaranye ${scoreAfter} / ${maxMarks}. Turabasaba gufatanya n'ishuri kumufasha kunoza imyitwarire. Murakoze. Best regards, IshuriApp.`;
+  const place = String(school || "School").trim();
+  const child = String(student || "Student").trim();
+  const caseTitle = String(title || "Indiscipline").trim();
+  const tail = ` -${marksLost} ${scoreAfter}/${maxMarks}`;
+  return fitSms(`${place}: ${child} ${caseTitle}.${tail}`);
 }
 
 function assertRanges(maxMarks, normalFrom, mediumFrom, abnormalFrom) {
@@ -126,7 +139,8 @@ router.post(
     if (!Number.isFinite(marksLost) || marksLost <= 0) {
       throw new ApiError(400, "Enter how many marks to subtract");
     }
-    const title = String(req.body.title || "").trim() || "Indiscipline";
+    const title = clipSms(req.body.title) || "Indiscipline";
+    const description = clipSms(req.body.description);
 
     const term = await DisciplineTerm.findOne({ school: req.user.school }).sort({ updatedAt: -1 });
     if (!term) throw new ApiError(400, "Initialize the term discipline marks first");
@@ -156,7 +170,7 @@ router.post(
       category: req.body.category || "misconduct",
       severity: req.body.severity || "medium",
       title,
-      description: req.body.description,
+      description,
       actionTaken: req.body.actionTaken,
       marksLost,
       scoreAfter,
@@ -210,6 +224,38 @@ router.post(
   })
 );
 
+router.get(
+  "/phrases",
+  asyncHandler(async (req, res) => {
+    const items = await DisciplinePhrase.find({ school: req.user.school }).sort({ text: 1 });
+    res.json({ success: true, items });
+  })
+);
+
+router.post(
+  "/phrases",
+  asyncHandler(async (req, res) => {
+    if (req.user.role !== "discipline") throw new ApiError(403, "Only the discipline officer can add these messages.");
+    const text = clipSms(req.body.text);
+    if (!text) throw new ApiError(400, "Write the message first.");
+    const kind = req.body.kind === "happened" ? "happened" : "title";
+    const existing = await DisciplinePhrase.findOne({ school: req.user.school, kind, text });
+    if (existing) throw new ApiError(400, "That message is already in the list.");
+    const item = await DisciplinePhrase.create({ school: req.user.school, kind, text, createdBy: req.user._id });
+    res.status(201).json({ success: true, item });
+  })
+);
+
+router.delete(
+  "/phrases/:id",
+  asyncHandler(async (req, res) => {
+    if (req.user.role !== "discipline") throw new ApiError(403, "Only the discipline officer can add these messages.");
+    const item = await DisciplinePhrase.findOneAndDelete({ _id: req.params.id, school: req.user.school });
+    if (!item) throw new ApiError(404, "Case not found");
+    res.json({ success: true });
+  })
+);
+
 router.patch(
   "/:id",
   asyncHandler(async (req, res) => {
@@ -249,6 +295,61 @@ router.post(
     item.parentNotifiedAt = new Date();
     await item.save();
     res.json({ success: true, item, result: sent.result, smsBalance: school.smsBalance, message: "Parent notified" });
+  })
+);
+
+function canonTerm(value) {
+  const lower = String(value || "").trim().toLowerCase();
+  if (lower === "1" || lower === "term 1") return "1";
+  if (lower === "2" || lower === "term 2") return "2";
+  if (lower === "3" || lower === "term 3") return "3";
+  return "";
+}
+
+router.get(
+  "/standing",
+  asyncHandler(async (req, res) => {
+    const year = String(req.query.academicYear || new Date().getFullYear()).trim();
+    const classId = String(req.query.classRoom || "").trim();
+    const studentFilter = { school: req.user.school, isActive: true };
+    if (/^[a-f0-9]{24}$/i.test(classId)) studentFilter.classRoom = classId;
+    const students = await Student.find(studentFilter).populate("classRoom", "name").sort({ fullName: 1 });
+    const terms = await DisciplineTerm.find({ school: req.user.school, academicYear: year });
+    const scores = students.length
+      ? await DisciplineScore.find({ school: req.user.school, academicYear: year, student: { $in: students.map((student) => student._id) } })
+      : [];
+    const maxFor = (key) => {
+      const found = terms.find((item) => canonTerm(item.term) === key);
+      const max = Number(found?.maxMarks);
+      return Number.isFinite(max) && max > 0 ? max : 40;
+    };
+    const rows = students.map((student) => {
+      const mine = scores.filter((row) => String(row.student) === String(student._id));
+      const termMarks = {};
+      ["1", "2", "3"].forEach((key) => {
+        const hit = mine.find((row) => canonTerm(row.term) === key);
+        const max = maxFor(key);
+        termMarks[key] = { score: hit ? Number(hit.score) : null, max };
+      });
+      const recorded = ["1", "2", "3"].filter((key) => termMarks[key].score != null);
+      const average = recorded.length
+        ? Math.round((recorded.reduce((sum, key) => sum + (termMarks[key].score / termMarks[key].max) * 40, 0) / recorded.length) * 10) / 10
+        : null;
+      const percent = average == null ? null : Math.round((average / 40) * 1000) / 10;
+      return {
+        id: student._id,
+        name: student.fullName,
+        code: student.studentCode || "",
+        classId: student.classRoom?._id || student.classRoom || "",
+        className: student.classRoom?.name || "",
+        terms: termMarks,
+        average,
+        percent,
+        reached: percent == null ? null : percent >= 50,
+      };
+    });
+    rows.sort((a, b) => String(a.className).localeCompare(String(b.className)) || String(a.name).localeCompare(String(b.name)));
+    res.json({ success: true, year, max: 40, rows });
   })
 );
 
